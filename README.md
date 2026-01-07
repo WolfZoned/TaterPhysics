@@ -7,7 +7,7 @@ Basic interactions
 Bounding box
 
 # Needs Porting
---GJK, EPA, and impulse calculations
+GJK, EPA, and impulse calculations
 
 Friction
 
