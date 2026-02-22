@@ -29,6 +29,25 @@ public class DrawingCanvas extends JComponent {
         this.maxStepsPerFrame = maxStepsPerFrame;
     }
 
+    public void drawDrawnVecs(Graphics2D g2d) {
+        synchronized (Stage.DRAWN_LOCK) {
+            if (!(Stage.drawn.lines == null || Stage.drawn.lines.isEmpty())) {
+                for (Vec.coloredLine line : Stage.drawn.lines) {
+                    g2d.setColor(line.color);
+                    g2d.drawLine((int) line.start.x, (int) line.start.y, (int) line.end.x, (int) line.end.y);
+                }
+            }
+            g2d.setColor(Color.BLUE);
+            g2d.fillOval(Stage.drawn.stageWidth / 2 - 2, Stage.drawn.stageHeight / 2 - 2, 4, 4);
+            if (!(Stage.drawn.points == null || Stage.drawn.points.isEmpty())) {
+                for (Vec.coloredVec point : Stage.drawn.points) {
+                    g2d.setColor(point.color);
+                    g2d.fillOval((int) point.vec.x - 2, (int) point.vec.y - 2, 4, 4);
+                }
+            }
+        }
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
@@ -38,12 +57,12 @@ public class DrawingCanvas extends JComponent {
                 RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setRenderingHints(rh);
 
-        // Render objects
+        drawDrawnVecs(g2d);
         objectRenderer1.renderObjects(g2d);
 
         // Optionally draw debug info directly on the canvas instead of using textArea
         g2d.setColor(Color.BLACK);
         g2d.drawString("Mouse X: " + mouseX + "   Mouse Y: " + mouseY, 10, 20);
-        g2d.drawString(stepsOnFrame + " steps this frame out of max " + maxStepsPerFrame, 10, 40);
+        g2d.drawString(stepsOnFrame + " steps this frame out of max " + maxStepsPerFrame + "at " + Stage.maxFps + " (max) fps", 10, 40);
     }
 }

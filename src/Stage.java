@@ -1,7 +1,6 @@
 import javax.swing.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionAdapter;
+import java.awt.*;
+import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -30,19 +29,44 @@ public class Stage {
     public int maxStepsPerFrame;
     public int stepsOnFrame;
     public AtomicBoolean frameRendered;
+    public static int maxFps;
+
+    public static class drawn {
+        static int stageWidth;
+        static int stageHeight;
+        public static void SetVarsCauseImDumbAndDontKnowABetterWayToDoThis(int width, int height) {
+            stageWidth = width;
+            stageHeight = height;
+        }
+        public static ArrayList <Vec.coloredVec> points = new ArrayList<>();
+        public static volatile ArrayList <Vec.coloredLine> lines = new ArrayList<>();
+        public static void addCenteredPoint(Vec.coloredVec coloredVec) {
+            Vec vec = coloredVec.vec;
+            Color color = coloredVec.color;
+            points.add(new Vec.coloredVec(vec.add((double) stageWidth /2, (double) stageHeight /2), color));
+        }
+            public static void addCenteredLine(Vec.coloredLine coloredLine) {
+                Vec start = coloredLine.start;
+                Vec end = coloredLine.end;
+                Color color = coloredLine.color;
+                lines.add(new Vec.coloredLine(start.add((double) stageWidth /2, (double) stageHeight /2), end.add((double) stageWidth /2, (double) stageHeight /2), color));
+            }
+    }
 
     public static ArrayList<Object> objects;
     public static final java.lang.Object OBJECTS_LOCK = new java.lang.Object();
+    public static final java.lang.Object DRAWN_LOCK = new java.lang.Object();
 
-    public Stage(int width, int height, int scale, double stepSize, int maxStepsPerFrame) {
+    public Stage(int width, int height, int scale, double stepSize, int maxStepsPerFrame, int fps) {
         this.width = width;
         this.height = height;
         this.scale = scale;
         this.stepSize = stepSize;
         this.maxStepsPerFrame = maxStepsPerFrame;
+        maxFps = fps;
         stepsOnFrame = 0;
         initializePhysics();
-        initializeCanvas();
+        initializeCanvas(maxFps);
         input = new Input();
     }
 
@@ -51,16 +75,19 @@ public class Stage {
         mouseHoverObjectId = -1;
         interactionStage = 0;
         interactionMode = "none";
-        gravity = 1.81;
+        //gravity = 1.81;
+        gravity = 0.0;
     }
 
-    public void initializeCanvas() {
+    public void initializeCanvas(int fps) {
         JFrame frame = new JFrame("test frame title");
         canvas = new DrawingCanvas(width, height, scale);
         frame.setSize(width, height);
         frame.add(canvas);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
+
+        drawn.SetVarsCauseImDumbAndDontKnowABetterWayToDoThis(width, height);
 
         frame.addMouseListener(new MouseAdapter() {
             @Override
@@ -106,6 +133,18 @@ public class Stage {
                 }
             }
         });
+        frame.addKeyListener(new KeyListener() {
+            @Override
+            public void keyTyped(KeyEvent e) {}
+            @Override
+            public void keyPressed(KeyEvent e) {
+                input.keys.press(e.getKeyCode());
+            }
+            @Override
+            public void keyReleased(KeyEvent e) {
+                input.keys.release(e.getKeyCode());
+            }
+        });
 
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         frameRendered = new AtomicBoolean(false);
@@ -115,11 +154,18 @@ public class Stage {
             canvas.updateDisplayData(volatileMouseX, volatileMouseY, stepsOnFrame, maxStepsPerFrame);
             canvas.repaint();                 // runs on EDT
             frameRendered.set(true);       // safe publish to other threads
-        }), 0, 16, TimeUnit.MILLISECONDS);
+        }), 0, (int) (1000/ (double) fps), TimeUnit.MILLISECONDS);
     }
 
     public void runSteps(int steps) {
         for (int i = 0; i < steps; i++) {
+            while (input.keys.isPressed(KeyEvent.VK_SPACE)) {
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
             stepsOnFrame++;
             stepPhysics(this.stepSize);
             frameRendered.set(false); //be careful because a frame could theoretically be rendered before this is set to false
@@ -139,6 +185,10 @@ public class Stage {
     private void stepPhysics(double stepSize) {
         if (frameRendered.get()) {
             if (frameRendered.get()) {
+                synchronized (DRAWN_LOCK) {
+                    drawn.points.clear();
+                    drawn.lines.clear();
+                }
                 stepsOnFrame = 0;
                 input.mouse.updatePos(volatileMouseX, volatileMouseY);
                 /*if (prevMouseX != mouseX) { prevMouseX = mouseX; }
@@ -153,7 +203,7 @@ public class Stage {
                 }*/
             }
             input.mouse.updateStepChange();
-            interactions();
+            interactions(); //also deletes old drawn lines and points, since this is the first object lock
             worldForces(stepSize);
             applyVelocity(stepSize);
         }

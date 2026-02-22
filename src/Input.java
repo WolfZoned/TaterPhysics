@@ -1,4 +1,5 @@
-import java.awt.event.MouseEvent;
+import java.util.HashSet;
+import java.util.Set;
 
 public class Input {
     public Keys keys;
@@ -47,5 +48,27 @@ public class Input {
     }
 
     public static class Keys {
+        private final Set<Integer> pressedKeys = new HashSet<>();
+
+        public void press(int keyCode) {
+            pressedKeys.add(keyCode);
+        }
+
+        public void release(int keyCode) {
+            pressedKeys.remove(keyCode);
+        }
+
+        public boolean isPressed(int keyCode) {
+            return pressedKeys.contains(keyCode);
+            //use input.keys.isPressed(KeyEvent.VK_W)
+        }
+
+        public Set<Integer> getAllPressed() {
+            return new HashSet<>(pressedKeys);
+        }
+
+        public void clear() {
+            pressedKeys.clear();
+        }
     }
 }

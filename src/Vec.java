@@ -1,3 +1,5 @@
+import java.awt.*;
+
 public class Vec {
     public double x;
     public double y;
@@ -14,6 +16,35 @@ public class Vec {
 
     public Vec copy() {
         return new Vec(this.x, this.y);
+    }
+
+    public static class coloredVec {
+        public Vec vec;
+        public Color color;
+        public String name;
+
+        public coloredVec(Vec vec, Color color) {
+            this.vec = new Vec(vec.x, vec.y);
+            this.color = color;
+            this.name = "";
+        }
+        public coloredVec(Vec vec, Color color, String name) {
+            this.vec = new Vec(vec.x, vec.y);
+            this.color = color;
+            this.name = name;
+        }
+    }
+
+    public static class coloredLine {
+        public Vec start;
+        public Vec end;
+        public Color color;
+
+        public coloredLine(Vec start, Vec end, Color color) {
+            this.start = start;
+            this.end = end;
+            this.color = color;
+        }
     }
 
     public boolean equals(Vec vec) {
@@ -51,7 +82,7 @@ public class Vec {
         return newArr;
     }
 
-    // formula stuff
+    // Formula stuff
     public static double dot(Vec a, Vec b) {
         return a.x * b.x + a.y * b.y;
     }
@@ -62,12 +93,66 @@ public class Vec {
 
     public static Vec dirOfPerpendicularBisector(Vec a, Vec b) { return dirOfPerpendicularBisector(a, b, false); }
     public static Vec dirOfPerpendicularBisector(Vec a, Vec b, boolean flip) {
+        // Compute perpendicular to 'a', scaled by cross product of a and b
+        // This simplifies to: perp(a) * cross(a, b)
+        // This uses the winding product instead of the original triple product from the first engine :)
+        double crossProduct = cross(a, b);
+        Vec result;
         if (flip) {
-            return new Vec(-1 * a.y * ((b.x * a.y) - (a.x * b.y)), -1 * a.x * ((b.y * a.x) - (a.y * b.x)));
+            // Perpendicular counterclockwise: (-a.y, a.x)
+            result = new Vec(-a.y * crossProduct, a.x * crossProduct);
         } else {
-            return new Vec(a.y * ((b.x * a.y) - (a.x * b.y)), a.x * ((b.y * a.x) - (a.y * b.x)));
+            // Perpendicular clockwise: (a.y, -a.x)
+            result = new Vec(a.y * crossProduct, -a.x * crossProduct);
+        }
+        // Normalize for numerical stability in GJK algorithm
+        double length = Math.sqrt(result.x * result.x + result.y * result.y);
+        if (length > 0) {
+            return new Vec(result.x / length, result.y / length);
+        }
+        IO.println("Warning: Zero-length perpendicular bisector direction vector.");
+        IO.println(length);
+        return result; // Return to protect against division by zero
+    }
+
+    public static boolean isPointRightOfLine(Vec point, Vec linePointA, Vec linePointB, boolean inclusive) {
+        if (inclusive) {
+            return ((linePointB.x - linePointA.x) * (point.y - linePointA.y) - (linePointB.y - linePointA.y) * (point.x - linePointA.x)) <= 0;
+        } else {
+            return ((linePointB.x - linePointA.x) * (point.y - linePointA.y) - (linePointB.y - linePointA.y) * (point.x - linePointA.x)) < 0;
         }
     }
+
+    public static double normDist(Vec p, Vec a, Vec b, boolean clamp) {
+        double AxtoPx = p.x - a.x;
+        double AytoPy = p.y - a.y;
+        double AxtoBx = b.x - a.x;
+        double AytoBy = b.y - a.y;
+
+        double dot = AxtoPx * AxtoBx + AytoPy * AytoBy;
+        double len_sq = AxtoBx * AxtoBx + AytoBy * AytoBy;
+        double param = -1;
+        if (len_sq != 0) { //in case of 0 length line
+            param = dot / len_sq;
+        }
+        if (clamp) {
+            if (param < 0) {
+                return 0;
+            } else if (param > 1) {
+                return 1;
+            } else {
+                return param;
+            }
+        } else {
+            return param;
+        }
+    }
+
+    public static Vec normDistPoint(Vec p, Vec a, Vec b, boolean clamp) {
+        double param = normDist(p, a, b, clamp);
+        return new Vec(a.x + param * (b.x - a.x), a.y + param * (b.y - a.y));
+    }
+
 
     public double length() {return Math.sqrt(x * x + y * y); }
 
@@ -98,6 +183,8 @@ public class Vec {
 
     public Vec add(double s) {  return new Vec(this.x + s, this.y + s); }
 
+    public Vec add(double sx, double sy) {  return new Vec(this.x + sx, this.y + sy); }
+
     public Vec sub(Vec v) { return new Vec(this.x - v.x, this.y - v.y); }
 
     public Vec sub(double s) { return new Vec(this.x - s, this.y - s); }
@@ -117,6 +204,10 @@ public class Vec {
 
     public static Vec add(Vec v, double s) {
         return new Vec(v.x + s, v.y + s);
+    }
+
+    public static Vec add(Vec v, double sx, double sy) {
+        return new Vec(v.x + sx, v.y + sy);
     }
 
     public static Vec sub(Vec a, Vec b) {
