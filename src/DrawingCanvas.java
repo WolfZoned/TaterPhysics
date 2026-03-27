@@ -1,4 +1,5 @@
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import javax.swing.*;
 public class DrawingCanvas extends JComponent {
 
@@ -34,6 +35,7 @@ public class DrawingCanvas extends JComponent {
             if (!(Stage.drawn.lines == null || Stage.drawn.lines.isEmpty())) {
                 for (Vec.coloredLine line : Stage.drawn.lines) {
                     g2d.setColor(line.color);
+                    g2d.setStroke(new BasicStroke(line.width));
                     g2d.drawLine((int) line.start.x, (int) line.start.y, (int) line.end.x, (int) line.end.y);
                 }
             }
@@ -42,7 +44,8 @@ public class DrawingCanvas extends JComponent {
             if (!(Stage.drawn.points == null || Stage.drawn.points.isEmpty())) {
                 for (Vec.coloredVec point : Stage.drawn.points) {
                     g2d.setColor(point.color);
-                    g2d.fillOval((int) point.vec.x - 2, (int) point.vec.y - 2, 4, 4);
+
+                    g2d.fillOval((int) point.vec.x - 2*point.size, (int) point.vec.y - 2*point.size, 4*point.size, 4*point.size);
                 }
             }
         }
@@ -63,6 +66,7 @@ public class DrawingCanvas extends JComponent {
         // Optionally draw debug info directly on the canvas instead of using textArea
         g2d.setColor(Color.BLACK);
         g2d.drawString("Mouse X: " + mouseX + "   Mouse Y: " + mouseY, 10, 20);
-        g2d.drawString(stepsOnFrame + " steps this frame out of max " + maxStepsPerFrame + "at " + Stage.maxFps + " (max) fps", 10, 40);
+        g2d.drawString("Rel Mouse X: " + (mouseX-(width/2)) + "   Rel Mouse Y: " + (mouseY-(height/2)), 10, 40);
+        g2d.drawString(stepsOnFrame + " steps this frame out of max " + maxStepsPerFrame + " at " + Stage.maxFps + " (max) fps", 10, 60);
     }
 }

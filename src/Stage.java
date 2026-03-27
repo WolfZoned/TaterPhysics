@@ -13,6 +13,9 @@ public class Stage {
 
     public int mouseHoverObjectId;
     public Input input;
+    public boolean pausedByToggle;
+    public boolean pauseKeyPressed;
+    public boolean paused;
 
     public double gravity;
 
@@ -40,17 +43,19 @@ public class Stage {
         }
         public static ArrayList <Vec.coloredVec> points = new ArrayList<>();
         public static volatile ArrayList <Vec.coloredLine> lines = new ArrayList<>();
+        //public static void addCenteredPoint(Vec.coloredVec coloredVec) { addCenteredPoint(coloredVec, 1); }
+        //public static void addCenteredLine(Vec.coloredLine coloredLine) { addCenteredLine(coloredLine, 1); }
         public static void addCenteredPoint(Vec.coloredVec coloredVec) {
             Vec vec = coloredVec.vec;
             Color color = coloredVec.color;
-            points.add(new Vec.coloredVec(vec.add((double) stageWidth /2, (double) stageHeight /2), color));
+            points.add(new Vec.coloredVec(vec.add((double) stageWidth /2, (double) stageHeight /2), color, coloredVec.size));
         }
-            public static void addCenteredLine(Vec.coloredLine coloredLine) {
-                Vec start = coloredLine.start;
-                Vec end = coloredLine.end;
-                Color color = coloredLine.color;
-                lines.add(new Vec.coloredLine(start.add((double) stageWidth /2, (double) stageHeight /2), end.add((double) stageWidth /2, (double) stageHeight /2), color));
-            }
+        public static void addCenteredLine(Vec.coloredLine coloredLine) {
+            Vec start = coloredLine.start;
+            Vec end = coloredLine.end;
+            Color color = coloredLine.color;
+            lines.add(new Vec.coloredLine(start.add((double) stageWidth /2, (double) stageHeight /2), end.add((double) stageWidth /2, (double) stageHeight /2), color, coloredLine.width));
+        }
     }
 
     public static ArrayList<Object> objects;
@@ -77,6 +82,8 @@ public class Stage {
         interactionMode = "none";
         //gravity = 1.81;
         gravity = 0.0;
+        paused = false;
+        pauseKeyPressed = false;
     }
 
     public void initializeCanvas(int fps) {
@@ -159,7 +166,9 @@ public class Stage {
 
     public void runSteps(int steps) {
         for (int i = 0; i < steps; i++) {
-            while (input.keys.isPressed(KeyEvent.VK_SPACE)) {
+            checkPaused();
+            while (paused) {
+                checkPaused();
                 try {
                     Thread.sleep(1);
                 } catch (InterruptedException e) {
@@ -194,7 +203,7 @@ public class Stage {
                 /*if (prevMouseX != mouseX) { prevMouseX = mouseX; }
                 if (prevMouseY != mouseY) { prevMouseY = mouseY; }
                 if (mouseX != volatileMouseX) {
-                    prevMouseX = mouseX;
+                    prevMouseX = mouseX;//h
                     mouseX = volatileMouseX;
                 }
                 if (mouseY != volatileMouseY) {
@@ -214,6 +223,16 @@ public class Stage {
             }
             ObjectHandler.collisionCalcs(objects);
         }
+    }
+
+    private void checkPaused() {
+        if (input.keys.isPressed(KeyEvent.VK_P) && !pausedByToggle && !pauseKeyPressed) {
+            pausedByToggle = true;
+        } else if (input.keys.isPressed(KeyEvent.VK_P) && pausedByToggle && !pauseKeyPressed) {
+            pausedByToggle = false;
+        }
+        pauseKeyPressed = input.keys.isPressed(KeyEvent.VK_P);
+        paused = pausedByToggle || input.keys.isPressed(KeyEvent.VK_SPACE);
     }
 
     private void interactions() {

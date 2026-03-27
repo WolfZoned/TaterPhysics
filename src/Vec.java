@@ -22,16 +22,31 @@ public class Vec {
         public Vec vec;
         public Color color;
         public String name;
+        public int size;
 
         public coloredVec(Vec vec, Color color) {
             this.vec = new Vec(vec.x, vec.y);
             this.color = color;
             this.name = "";
+            this.size = 1;
         }
         public coloredVec(Vec vec, Color color, String name) {
             this.vec = new Vec(vec.x, vec.y);
             this.color = color;
             this.name = name;
+            this.size = 1;
+        }
+        public coloredVec(Vec vec, Color color, int size) {
+            this.vec = new Vec(vec.x, vec.y);
+            this.color = color;
+            this.name = "";
+            this.size = size;
+        }
+        public coloredVec(Vec vec, Color color, String name, int size) {
+            this.vec = new Vec(vec.x, vec.y);
+            this.color = color;
+            this.name = name;
+            this.size = size;
         }
     }
 
@@ -39,11 +54,20 @@ public class Vec {
         public Vec start;
         public Vec end;
         public Color color;
+        public String name;
+        public float width;
 
         public coloredLine(Vec start, Vec end, Color color) {
             this.start = start;
             this.end = end;
             this.color = color;
+            this.width = 1;
+        }
+        public coloredLine(Vec start, Vec end, Color color, float width) {
+            this.start = start;
+            this.end = end;
+            this.color = color;
+            this.width = width;
         }
     }
 
@@ -124,6 +148,7 @@ public class Vec {
     }
 
     public static double normDist(Vec p, Vec a, Vec b, boolean clamp) {
+        //finding where p is along line AB in a value from 0-1
         double AxtoPx = p.x - a.x;
         double AytoPy = p.y - a.y;
         double AxtoBx = b.x - a.x;
@@ -149,10 +174,19 @@ public class Vec {
     }
 
     public static Vec normDistPoint(Vec p, Vec a, Vec b, boolean clamp) {
+        //finding the closest point to p on line AB
         double param = normDist(p, a, b, clamp);
         return new Vec(a.x + param * (b.x - a.x), a.y + param * (b.y - a.y));
     }
 
+    public static double distInDir(Vec a, Vec dir) {
+        double dotProduct = dot(a, dir);
+        double dirLengthSquared = dot(dir, dir);
+        if (dirLengthSquared == 0) {
+            throw new IllegalArgumentException("Direction vector cannot be the zero vector.");
+        }
+        return dotProduct / Math.sqrt(dirLengthSquared);
+    }
 
     public double length() {return Math.sqrt(x * x + y * y); }
 
@@ -229,5 +263,17 @@ public class Vec {
     @Override
     public String toString() {
         return "Vec(" + x + ", " + y + ")";
+    }
+
+    public static double len(Vec a, Vec b) {
+        return Math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
+    }
+
+    public static double len(Vec a) {
+        return Math.sqrt(a.x * a.x + a.y * a.y);
+    }
+
+    public double len() {
+        return Math.sqrt(x * x + y * y);
     }
 }
