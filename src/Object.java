@@ -130,6 +130,20 @@ public class Object {
         return inside;*/
     }
 
+    public int closestPoint(Vec point) {
+        double minDist = Double.MAX_VALUE;
+        int minDistIndex = -1;
+        double tempMinDist;
+        for (int i = 0; i < rel.length; i++) {
+            tempMinDist = Vec.distance(Vec.add(rel[i], pos), point);
+            if (tempMinDist < minDist) {
+                minDist = tempMinDist;
+                minDistIndex = i;
+            }
+        }
+        return minDistIndex;
+    }
+
     private void PropertiesCalc(Vec[] rel, double depth, double density) {
         // Accumulate the following values
         double area = 0.0;

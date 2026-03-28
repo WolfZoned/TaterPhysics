@@ -13,13 +13,13 @@ public class ObjectHandler {
             new Vec(27, -13),
             new Vec(-23, -13)
         };
-        objects.add(new Object(new Color(0, 200, 0), 350, 200, 0.0, setRel, objects.size()));
+        objects.add(new Object(new Color(0, 177, 0), 350, 200, 0.0, setRel, objects.size()));
         return objects;
     }
 
     public static int mouseHoveredObject(Vec mousePos, ArrayList<Object> objects) {
-        for (Object obj : objects) {
-
+        for (int i = objects.size() - 1; i >= 0; i--) {
+            Object obj = objects.get(i);
             if (obj != null && obj.type.equals("polygon")) {
                 if (obj.isPointInside(mousePos)) {
                     return obj.index;
@@ -53,9 +53,13 @@ public class ObjectHandler {
             synchronized (Stage.DRAWN_LOCK) {
                 ArrayList<Vec> simplexList = new ArrayList<Vec>();
                 if (GJKCollision(objA, objB, simplexList)) {
-                    if (EPACollision(objA, objB, simplexList)) {
+                    Vec MTV = EPACollision(objA, objB, simplexList);
+                    if (MTV != null) {
                         objA.boundingBox.boxColor = new Color(72, 255, 0, 255);
                         objB.boundingBox.boxColor = new Color(72, 255, 0, 255);
+                        objA.pos = objA.pos.add(MTV.mul(0.5));
+                        objB.pos = objB.pos.add(MTV.mul(-0.5));
+                        findContactPoints(objA, objB);
                     } else {
                         objA.boundingBox.boxColor = new Color(100, 0, 255, 255);
                         objB.boundingBox.boxColor = new Color(100, 0, 255, 255);
@@ -168,7 +172,7 @@ public class ObjectHandler {
         return false;
     }
 
-    private static boolean EPACollision(Object objA, Object objB, ArrayList<Vec> simplexList) {
+    private static Vec EPACollision(Object objA, Object objB, ArrayList<Vec> simplexList) {
         //do a better job of calculating clockwise/counterclockwise inside gjk - determine when and if it switches
         //counterpoint: check if they are clockwise now? don't touch whats not broken (at least i don't think it is???)
         //IO.println("");
@@ -222,7 +226,7 @@ public class ObjectHandler {
                 if (Options.EPA.render.drawFailedSimplex) {
                     DrawSimplex(simplexList, Options.EPA.render.failedSimplexColor, 1f);
                 }
-                return false;
+                return null;
             }
             newVec = findGJKPoint(objA, objB, minDistVec);
             //checks if simplex already contrains newVec - if it does, then we have found the closest point on the Minkowski Difference to the origin, and can terminate with collision result
@@ -231,7 +235,7 @@ public class ObjectHandler {
                 if (Options.EPA.render.drawSucessfulSimplex) {
                     DrawSimplex(simplexList, Options.EPA.render.successfulSimplexColor, 1f);
                 }
-                return true;
+                return minDistVec;
             }
             Stage.drawn.addCenteredPoint(new Vec.coloredVec(newVec, new Color(255, 0, 0, 255)));
             if (EPAMemory[0] == minDistVec.x && EPAMemory[1] == minDistVec.y || EPAMemory[2] == minDistVec.x && EPAMemory[3] == minDistVec.y) {
@@ -240,7 +244,7 @@ public class ObjectHandler {
                 if (Options.EPA.render.drawFailedSimplex) {
                     DrawSimplex(simplexList, Options.EPA.render.failedSimplexColor, 1f);
                 }
-                return false;
+                return null;
             }
             if (EPAMemory[0] != 0) {
                 EPAMemory[2] = EPAMemory[0];
@@ -254,12 +258,12 @@ public class ObjectHandler {
         if (Options.EPA.render.drawFailedSimplex) {
             DrawSimplex(simplexList, Options.EPA.render.failedSimplexColor, 1f);
         }
-        return false;
+        return null;
     }
 
     private static boolean checkGJKPoint(Object objA, Object objB, Vec direction, ArrayList<Vec> simplexList, int pointIndex, String pointCheckStyle, double dirVecLen) {
         simplexList.set(pointIndex, findGJKPoint(objA, objB, direction)); //since the list is already initialized with nulls, we can just replace existing points
-        Stage.drawn.addCenteredPoint(new Vec.coloredVec(simplexList.get(pointIndex), new Color(0, 255, 0, 255)));
+        Stage.drawn.addCenteredPoint(new Vec.coloredVec(simplexList.get(pointIndex), new Color(2, 237, 2, 255)));
         if (pointCheckStyle.equals("insert second check style here")) {
             double normDistBetweenPointsAndOrigin = Vec.normDist(new Vec(0,0), simplexList.get(0), simplexList.get(1), true);
             return normDistBetweenPointsAndOrigin != 0 && normDistBetweenPointsAndOrigin != 1;
@@ -313,6 +317,99 @@ public class ObjectHandler {
         Vec pointB = objB.rel[highestIndex].add(objB.pos);
         if (Options.GJK.debug) {IO.println("DIRECTION: " + direction + "     New Vec: " + Vec.sub(pointB, pointA));}
         return(Vec.sub(pointB, pointA)); //since the list is already initialized with nulls, we can just replace existing points
+    }
+
+    private static Vec findContactPoints(Object objA, Object objB) {
+        double tolerance = 0.6;
+        int minDistPointIndex1 = 0;
+        int minDistPointIndex2 = 0;
+        int minDistLineIndex1 = 0;
+        int minDistLineIndex2;
+        int shapeIndex1 = 0;
+        int shapeIndex2 = 0;
+
+        double contactBuild;
+        double tempMinDist = Double.MAX_VALUE;
+        double tempNormDist;
+        IO.println("");
+        IO.println("");
+        IO.println("Contact Points round 1:");
+        for  (int i = 0; i < objB.rel.length; i++) {
+            for (int j = 0; j < objA.rel.length; j++) {
+                tempNormDist = Vec.normDist(objA.rel[j].add(objA.pos), objB.rel[i].add(objB.pos), objB.rel[(i+1)%objB.rel.length].add(objB.pos),true);
+                contactBuild = Vec.distToNormDistPoint(objA.rel[j].add(objA.pos), objB.rel[i].add(objB.pos), objB.rel[(i+1)%objB.rel.length].add(objB.pos), true, tempNormDist);
+
+                if ((contactBuild + tolerance) < tempMinDist) {
+                    minDistPointIndex2 = -1;
+                    shapeIndex2 = -1;
+                    minDistPointIndex1 = j;
+                    minDistLineIndex1 = i;
+                    shapeIndex1 = 2;
+                    tempMinDist = contactBuild;
+                    IO.println("New min 1 found:      MinPointIndex " + minDistPointIndex1 + "   MinLineIndex " + minDistLineIndex1 + "   MinDist " + tempMinDist);
+                } else if ((contactBuild - tolerance) < tempMinDist && minDistPointIndex1 != j && minDistPointIndex2 != j) {
+                    minDistPointIndex2 = j;
+                    minDistLineIndex2 = i;
+                    shapeIndex2 = 2;
+                    IO.println("New min 2 found:      MinPointIndex " + minDistPointIndex2 + "   MinLineIndex " + minDistLineIndex2 + "   MinDist " + tempMinDist);
+                }
+            }
+
+        }
+        IO.println("");
+        IO.println("Contact Points round 2:");
+        for  (int i = 0; i < objA.rel.length; i++) {
+            for (int j = 0; j < objB.rel.length; j++) {
+                tempNormDist = Vec.normDist(objB.rel[j].add(objB.pos), objA.rel[i].add(objA.pos), objA.rel[(i+1)%objA.rel.length].add(objA.pos),true);
+                contactBuild = Vec.distToNormDistPoint(objB.rel[j].add(objB.pos), objA.rel[i].add(objA.pos), objA.rel[(i+1)%objA.rel.length].add(objA.pos), true, tempNormDist);
+
+                if ((contactBuild + tolerance) < tempMinDist) {
+                    minDistPointIndex2 = -1;
+                    shapeIndex2 = -1;
+                    minDistPointIndex1 = j;
+                    minDistLineIndex1 = i;
+                    shapeIndex1 = 1;
+                    tempMinDist = contactBuild;
+                    IO.println("New min 1 found:      MinPointIndex " + minDistPointIndex1 + "   MinLineIndex " + minDistLineIndex1 + "   MinDist " + tempMinDist);
+                } else if ((contactBuild - tolerance) < tempMinDist && minDistPointIndex1 != j && minDistPointIndex2 != j) {
+                    minDistPointIndex2 = j;
+                    minDistLineIndex2 = i;
+                    shapeIndex2 = 1;
+                    IO.println("New min 2 found:      MinPointIndex " + minDistPointIndex2 + "   MinLineIndex " + minDistLineIndex2 + "   MinDist " + tempMinDist);
+                }
+
+            }
+        }
+        Vec contact;
+        Vec contact1;
+        Vec contact2 = null;
+        IO.println("");
+        IO.println("Shape A index: " + objA.index + "   Shape A length: " + objA.rel.length + "   Shape B index: " + objB.index + "   Shape B length: " + objB.rel.length);
+        IO.println("MinDistPointIndex1: " + minDistPointIndex1 + "   ShapeIndex1: " + shapeIndex1 + "   MinDistPointIndex2: " + minDistPointIndex2 + "   ShapeIndex2: " + shapeIndex2);
+        if (shapeIndex1 == 1) {
+            contact1 = objB.rel[minDistPointIndex1].add(objB.pos);
+        } else if (shapeIndex1 == 2) {
+            contact1 = objA.rel[minDistPointIndex1].add(objA.pos);
+        } else {
+            IO.println("ERROR: No contact point found");
+            return null;
+        }
+        if (shapeIndex2 == 1) {
+            contact2 = objB.rel[minDistPointIndex2].add(objB.pos);
+        } else if (shapeIndex2 == 2) {
+            contact2 = objA.rel[minDistPointIndex2].add(objA.pos);
+        }
+        if (shapeIndex2 == -1) {
+            contact = contact1;
+        } else {
+            contact = Vec.div(contact1.add(contact2),2);
+        }
+        Stage.drawn.points.add(new Vec.coloredVec(contact1, new Color(20, 66, 6, 255)));
+        if  (shapeIndex2 != -1) {
+            Stage.drawn.points.add(new Vec.coloredVec(contact2, new Color(20, 66, 6, 255)));
+        }
+        Stage.drawn.points.add(new Vec.coloredVec(contact, new Color(61, 255, 0, 255)));
+        return contact;
     }
 
     private static void DrawSimplex(ArrayList<Vec> simplexList, Color color, float width) {

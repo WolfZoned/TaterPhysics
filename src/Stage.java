@@ -11,7 +11,8 @@ public class Stage {
     public volatile int volatileMouseX;
     public volatile int volatileMouseY;
 
-    public int mouseHoverObjectId;
+    public static int mouseHoverObjectId;
+    public static int mouseHoverPointId;
     public Input input;
     public boolean pausedByToggle;
     public boolean pauseKeyPressed;
@@ -36,7 +37,7 @@ public class Stage {
 
     public static class drawn {
         static int stageWidth;
-        static int stageHeight;
+        static int stageHeight;//hfdf
         public static void SetVarsCauseImDumbAndDontKnowABetterWayToDoThis(int width, int height) {
             stageWidth = width;
             stageHeight = height;
@@ -167,16 +168,15 @@ public class Stage {
     public void runSteps(int steps) {
         for (int i = 0; i < steps; i++) {
             checkPaused();
-            while (paused) {
-                checkPaused();
-                try {
-                    Thread.sleep(1);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
+            //while (paused) {
+            //    try {
+            //        Thread.sleep(1);
+            //    } catch (InterruptedException e) {
+            //        e.printStackTrace();
+            //    }
+            //}
             stepsOnFrame++;
-            stepPhysics(this.stepSize);
+            stepPhysics(this.stepSize, paused);
             frameRendered.set(false); //be careful because a frame could theoretically be rendered before this is set to false
             if (stepsOnFrame >= maxStepsPerFrame) {
                 while (!frameRendered.get()) {
@@ -191,12 +191,14 @@ public class Stage {
         }
     }
 
-    private void stepPhysics(double stepSize) {
+    private void stepPhysics(double stepSize, boolean paused) {
         if (frameRendered.get()) {
             if (frameRendered.get()) {
-                synchronized (DRAWN_LOCK) {
-                    drawn.points.clear();
-                    drawn.lines.clear();
+                if (!paused) {
+                    synchronized (DRAWN_LOCK) {
+                        drawn.points.clear();
+                        drawn.lines.clear();
+                    }
                 }
                 stepsOnFrame = 0;
                 input.mouse.updatePos(volatileMouseX, volatileMouseY);
@@ -212,16 +214,19 @@ public class Stage {
                 }*/
             }
             input.mouse.updateStepChange();
-            interactions(); //also deletes old drawn lines and points, since this is the first object lock
-            worldForces(stepSize);
-            applyVelocity(stepSize);
-        }
-
-        synchronized (OBJECTS_LOCK) {
-            for (Object obj : objects) {
-                obj.updateRelativeCoordinates();
+            interactions(paused); //also deletes old drawn lines and points, since this is the first object lock
+            if (!paused) {
+                worldForces(stepSize);
+                applyVelocity(stepSize);
             }
-            ObjectHandler.collisionCalcs(objects);
+        }
+        if (!paused) {
+            synchronized (OBJECTS_LOCK) {
+                for (Object obj : objects) {
+                    obj.updateRelativeCoordinates();
+                }
+                ObjectHandler.collisionCalcs(objects);
+            }
         }
     }
 
@@ -235,11 +240,16 @@ public class Stage {
         paused = pausedByToggle || input.keys.isPressed(KeyEvent.VK_SPACE);
     }
 
-    private void interactions() {
+    private void interactions(boolean paused) {
         synchronized (OBJECTS_LOCK) {
             if (interactionMode.equals("none")) {
                 int oldHoverId = mouseHoverObjectId;
                 mouseHoverObjectId = ObjectHandler.mouseHoveredObject(input.mouse.pos, objects);
+                if (input.keys.isPressed(KeyEvent.VK_SHIFT) && mouseHoverObjectId != -1) {
+                    mouseHoverPointId = objects.get(mouseHoverObjectId).closestPoint(input.mouse.pos);
+                } else {
+                    mouseHoverPointId = -1;
+                }
                 if (oldHoverId != -1 && oldHoverId != mouseHoverObjectId) {
                     objects.get(oldHoverId).outlined = false;
                 }

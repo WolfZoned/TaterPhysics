@@ -28,6 +28,10 @@ public class ObjectRenderer {
             // Do nothing
         } else if (obj.type.equals("polygon")) {
             drawPolygon(g2d, obj.color, obj.rel, obj.pos, obj.outlined, obj.boundingBox, obj.boundingBox.boxColor);
+            if (obj.index == Stage.mouseHoverObjectId && Stage.mouseHoverPointId != -1) {
+                g2d.setColor(new Color(56, 65, 174));
+                g2d.fillOval((int) obj.pos.add(obj.rel[Stage.mouseHoverPointId]).x - 5, (int) obj.pos.add(obj.rel[Stage.mouseHoverPointId]).y - 5, 10, 10);
+            }
         }
     }
 
@@ -53,14 +57,16 @@ public class ObjectRenderer {
         g2d.setColor(new Color(0, 0, 0, 255));
         g2d.fill(new Ellipse2D.Double(center.x - 2, center.y - 2, 4, 4));
 
-        Path2D.Double box = new Path2D.Double();
-        box.moveTo(bb.xMin, bb.yMin);
-        box.lineTo(bb.xMax, bb.yMin);
-        box.lineTo(bb.xMax, bb.yMax);
-        box.lineTo(bb.xMin, bb.yMax);
-        box.closePath();
-        g2d.setColor(debugColor);
-        g2d.draw(box);
+        if (Options.AABB.render) {
+            Path2D.Double box = new Path2D.Double();
+            box.moveTo(bb.xMin, bb.yMin);
+            box.lineTo(bb.xMax, bb.yMin);
+            box.lineTo(bb.xMax, bb.yMax);
+            box.lineTo(bb.xMin, bb.yMax);
+            box.closePath();
+            g2d.setColor(debugColor);
+            g2d.draw(box);
+        }
     }
     /*private void drawRectangle(Graphics2D g2d, double x, double y, double w, double h, double rotation) {
         Rectangle2D.Double r = new Rectangle2D.Double(x, y, w, h);

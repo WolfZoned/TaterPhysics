@@ -2,7 +2,7 @@ import java.awt.*;
 
 public class Options {
     public static class AABB {
-
+        public static boolean render = false;
     }
     public static class GJK {
         public static boolean debug = false;

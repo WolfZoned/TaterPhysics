@@ -173,10 +173,25 @@ public class Vec {
         }
     }
 
+    public static Vec normDistPoint(Vec p, Vec a, Vec b, boolean clamp, double setNormDist) {
+        //finding the closest point to p on line AB
+        return new Vec(a.x + setNormDist * (b.x - a.x), a.y + setNormDist * (b.y - a.y));
+    }
+
     public static Vec normDistPoint(Vec p, Vec a, Vec b, boolean clamp) {
         //finding the closest point to p on line AB
         double param = normDist(p, a, b, clamp);
         return new Vec(a.x + param * (b.x - a.x), a.y + param * (b.y - a.y));
+    }
+
+    public static double distToNormDistPoint(Vec p, Vec a, Vec b, boolean clamp, double setNormDist) {
+        Vec closest = normDistPoint(p, a, b, clamp, setNormDist);
+        return distance(p, closest);
+    }
+
+    public static double distToNormDistPoint(Vec p, Vec a, Vec b, boolean clamp) {
+        Vec closest = normDistPoint(p, a, b, clamp);
+        return distance(p, closest);
     }
 
     public static double distInDir(Vec a, Vec dir) {
@@ -187,8 +202,6 @@ public class Vec {
         }
         return dotProduct / Math.sqrt(dirLengthSquared);
     }
-
-    public double length() {return Math.sqrt(x * x + y * y); }
 
     public double toAng() { return Math.atan2(y, x); }
 

@@ -60,13 +60,19 @@ public class DrawingCanvas extends JComponent {
                 RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setRenderingHints(rh);
 
-        drawDrawnVecs(g2d);
         objectRenderer1.renderObjects(g2d);
+        drawDrawnVecs(g2d);
 
         // Optionally draw debug info directly on the canvas instead of using textArea
         g2d.setColor(Color.BLACK);
         g2d.drawString("Mouse X: " + mouseX + "   Mouse Y: " + mouseY, 10, 20);
         g2d.drawString("Rel Mouse X: " + (mouseX-(width/2)) + "   Rel Mouse Y: " + (mouseY-(height/2)), 10, 40);
         g2d.drawString(stepsOnFrame + " steps this frame out of max " + maxStepsPerFrame + " at " + Stage.maxFps + " (max) fps", 10, 60);
+        if (Stage.mouseHoverObjectId != -1) {
+            g2d.drawString("Mouse is hovering object " + Stage.mouseHoverObjectId, 10, 80);
+            if (Stage.mouseHoverPointId != -1) {
+                g2d.drawString("Mouse is hovering point " + Stage.mouseHoverPointId, 10, 100);
+            }
+        }
     }
 }
