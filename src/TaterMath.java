@@ -5,6 +5,7 @@ public class TaterMath {
         return (a-1) % b+1;
     }*/
 
+    /// literally returns atan2
     public static double vecToAng(double x, double y) {
         return Math.atan2(y, x);
     }
@@ -17,6 +18,29 @@ public class TaterMath {
             shoelaceBuild += (list.get(i).x * list.get((i+1) % list.size()).y) - (list.get((i+1) % list.size()).x * list.get(i).y);
         }
         return shoelaceBuild;
+    }
+    public static boolean isClockwise(ArrayList<Vec> simplexList) {
+        //use shoelace - maybe extract full algorithm and then just use a part like in tater?
+        return TaterMath.shoelace(simplexList) > 0;
+    }
+
+    /// wow, these Javadoc comments are actually really handy (well not this one)
+    public static double area(ArrayList<Vec> simplexList) {
+        return Math.abs(TaterMath.shoelace(simplexList)) / 2;
+    }
+
+    /// returns the angular velocity converted and added to linear velocity
+    public static Vec relVel(Object obj, Vec rPerp) { //double aAngVel, double bAngVel, Vec aLinVel, Vec bLinVel
+        return rPerp.mul(obj.angularVel).add(obj.vel);
+        //return angVel * r perp + linVel
+    }
+
+    public static double contactVelMag(Vec relVel, Vec normal) {
+        if (relVel.dot(normal) < 0) {
+            return 0;
+        } else {
+            return relVel.dot(normal);
+        }
     }
 
 }

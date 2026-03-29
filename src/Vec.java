@@ -108,8 +108,10 @@ public class Vec {
 
     // Formula stuff
     public static double dot(Vec a, Vec b) {
-        return a.x * b.x + a.y * b.y;
+        return (a.x * b.x) + (a.y * b.y);
     }
+
+    public double dot(Vec b) { return this.x *  b.x + this.y * b.y; }
 
     public static double cross(Vec a, Vec b) {
         return a.x * b.y - a.y * b.x;
@@ -288,5 +290,17 @@ public class Vec {
 
     public double len() {
         return Math.sqrt(x * x + y * y);
+    }
+
+    public Vec normalize() {
+        double length = this.len();
+        if (length == 0) {
+            throw new IllegalArgumentException("Cannot normalize the zero vector.");
+        }
+        return new Vec(this.x / length, this.y / length);
+    }
+
+    public static Vec normalize(Vec a) {
+        return a.normalize();
     }
 }

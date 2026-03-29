@@ -31,6 +31,9 @@ public class Object {
     public double angularVel; //angular velocity
     public double setAngularVel;
 
+    public Vec velChange;
+    public double angularVelChange;
+
     public double inertia; //mass moment of inertia
     public double inverseInertia;
     public double mass;
@@ -51,6 +54,9 @@ public class Object {
         this.boundingBox = new BoundingBox();
         this.setRel = points;
         this.rel = Vec.copyArray(this.setRel);
+        this.velChange = new Vec(0.0, 0.0);
+        this.angularVelChange = 0.0;
+
         PropertiesCalc(this.setRel, 1.0, this.density);
         if (this.mass != 0) {
             this.inverseMass = 1.0 / this.mass;

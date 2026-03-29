@@ -6,6 +6,7 @@ public class Options {
     }
     public static class GJK {
         public static boolean debug = false;
+        public static boolean genAndDisplayAllOutsidePoints = false;
         public static class console {
         }
 

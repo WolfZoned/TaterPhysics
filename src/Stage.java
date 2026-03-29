@@ -168,6 +168,13 @@ public class Stage {
     public void runSteps(int steps) {
         for (int i = 0; i < steps; i++) {
             checkPaused();
+            if (input.keys.isPressed(KeyEvent.VK_O)) {
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
             //while (paused) {
             //    try {
             //        Thread.sleep(1);
@@ -288,6 +295,26 @@ public class Stage {
     private void applyVelocity(double stepSize) {
         synchronized (OBJECTS_LOCK) {
             for (Object obj : objects) {
+                if (obj.velChange.x != 0 || obj.velChange.y != 0) {
+                    obj.vel = obj.vel.add(obj.velChange);
+                    obj.velChange.set(0, 0);
+                }
+                if (obj.angularVelChange != 0) {
+                    obj.angularVel += obj.angularVelChange;
+                    obj.angularVelChange = 0;
+                }
+            }
+
+            for (Object obj : objects) {
+                if (input.keys.isPressed(KeyEvent.VK_K)) {
+                    if (mouseHoverObjectId == -1) {
+                        obj.vel = new Vec(0, 0);
+                        obj.angularVel = 0;
+                    } else if (obj.index == mouseHoverObjectId) {
+                        obj.vel = new Vec(0, 0);
+                        obj.angularVel = 0;
+                    }
+                }
                 if (!(interactionMode.equals("drag") && obj.index == mouseHoverObjectId)) {
                     obj.pos = obj.pos.add(obj.vel.mul(stepSize));
                 }

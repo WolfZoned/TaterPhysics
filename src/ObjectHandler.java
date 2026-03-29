@@ -55,11 +55,17 @@ public class ObjectHandler {
                 if (GJKCollision(objA, objB, simplexList)) {
                     Vec MTV = EPACollision(objA, objB, simplexList);
                     if (MTV != null) {
+                        // make sure MTV points from A to B for consistent correction/impulse direction
+                        Vec centerDelta = objB.pos.sub(objA.pos);
+                        if (Vec.dot(MTV, centerDelta) < 0) {
+                            MTV = MTV.mul(-1);
+                        }
                         objA.boundingBox.boxColor = new Color(72, 255, 0, 255);
                         objB.boundingBox.boxColor = new Color(72, 255, 0, 255);
-                        objA.pos = objA.pos.add(MTV.mul(0.5));
-                        objB.pos = objB.pos.add(MTV.mul(-0.5));
-                        findContactPoints(objA, objB);
+                        objA.pos = objA.pos.add(MTV.mul(-0.5));
+                        objB.pos = objB.pos.add(MTV.mul(0.5));
+                        Vec contact = findContactPoints(objA, objB);
+                        if (contact != null) { applyImpulse(objA, objB, MTV, contact); }
                     } else {
                         objA.boundingBox.boxColor = new Color(100, 0, 255, 255);
                         objB.boundingBox.boxColor = new Color(100, 0, 255, 255);
@@ -86,7 +92,7 @@ public class ObjectHandler {
     }
 
     private static boolean GJKCollision(Object objA, Object objB, ArrayList<Vec> simplexList) { //make sure all shapes are clockwise for now
-        generateAndDisplayAllOutsidePoints(objA, objB);
+        if (Options.GJK.genAndDisplayAllOutsidePoints) {generateAndDisplayAllOutsidePoints(objA, objB);}
         if (Options.GJK.debug) {IO.println("");}
         if (Options.GJK.debug) {IO.println("New GJK Collision Check");}
         simplexList.add(null);
@@ -123,7 +129,7 @@ public class ObjectHandler {
                 check1Passed = false;
                 if (Options.GJK.debug) {IO.println("check 1 failed");}
                 if (!checkGJKPoint(objA, objB, Vec.dirOfPerpendicularBisector(simplexList.get(2), simplexList.get(0)), simplexList, 1, "insert third check style here", 0.0)) {
-                    if (Options.GJK.debug) {IO.println("failed on loop check 1");}
+                    if (Options.GJK.debug) {IO.println("failed on loop check 1");}https://flavortown.hackclub.com/projects/5129
                     return false;
                 }
             }
@@ -183,7 +189,7 @@ public class ObjectHandler {
         Vec minDistLineStartingVec;
         Vec minDistLineEndingVec;
         double minDistAng;
-        boolean clockwise = isClockwise(simplexList);
+        boolean clockwise = TaterMath.isClockwise(simplexList);
         if (Options.GJK.debug) {IO.println("Original clockwise: " + clockwise + "but is now clockwise");}
         if (!clockwise) {
             Vec[] clockwiseVecs = new Vec[simplexList.size()];
@@ -194,7 +200,7 @@ public class ObjectHandler {
                 simplexList.set(i, clockwiseVecs[i]);
             }
         }
-        clockwise = isClockwise(simplexList);
+        clockwise = TaterMath.isClockwise(simplexList);
         int EPAAttempts = 30;
         Vec tempVec;
         double tempVecDist;
@@ -412,6 +418,35 @@ public class ObjectHandler {
         return contact;
     }
 
+    private static void applyImpulse(Object objA, Object objB, Vec MTV, Vec r) {
+        //contact and "r" are the same thing            MTV and simplexDist are the same thing
+
+        Vec normal = MTV.normalize();
+        Vec ra = r.sub(objA.pos);
+        Vec rb = r.sub(objB.pos);
+        Vec raPerp = new Vec(0-ra.y, ra.x);
+        Vec rbPerp = new Vec(0-rb.y, rb.x);
+        Vec relVel = TaterMath.relVel(objB, rbPerp).sub(TaterMath.relVel(objA, raPerp));
+        double raPerpDotN = Vec.dot(raPerp, normal);
+        double rbPerpDotN = Vec.dot(rbPerp, normal);
+        double denominator = (objA.inverseMass + objB.inverseMass) + ((raPerpDotN * raPerpDotN) * objA.inverseInertia) + ((rbPerpDotN * rbPerpDotN) * objB.inverseInertia);
+        if (denominator == 0) {
+            return;
+        }
+        double relVelDotN = Vec.dot(relVel, normal);
+        if (relVelDotN > 0) {
+            return;
+        }
+        double j = (-(1 + (objA.restitution * objB.restitution)) * relVelDotN) / denominator;
+        Vec impulse = normal.mul(j);
+        objA.velChange = objA.velChange.sub(impulse.mul(objA.inverseMass));
+        objA.angularVelChange -= objA.inverseInertia * Vec.cross(ra, impulse);
+        objB.velChange = objB.velChange.add(impulse.mul(objB.inverseMass));
+        objB.angularVelChange += objB.inverseInertia * Vec.cross(rb, impulse);
+
+        //Missing the static seperators or whatever
+    }
+
     private static void DrawSimplex(ArrayList<Vec> simplexList, Color color, float width) {
         for (int i = 0; i < simplexList.size(); i++) {
             if (simplexList.get(i) != null) {
@@ -420,15 +455,7 @@ public class ObjectHandler {
         }
     }
 
-    private static boolean isClockwise(ArrayList<Vec> simplexList) {
-        //use shoelace - maybe extract full algorithm and then just use a part like in tater?
-        return TaterMath.shoelace(simplexList) > 0;
-    }
-
-    private static double area(ArrayList<Vec> simplexList) {
-        return Math.abs(TaterMath.shoelace(simplexList)) / 2;
-    }
-    
+    /// debug tool to help visualize the possible points, but generated in the worst possible way lol. hope this is disabled later or the lag will be crazy
     private static void generateAndDisplayAllOutsidePoints(Object objA, Object objB) {
         Vec firstPoint = null;
         Vec oldPoint = null;
