@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.awt.geom.*;
+import java.util.ArrayList;
 
 public class ObjectRenderer {
     private int width;
@@ -12,11 +13,11 @@ public class ObjectRenderer {
         scale = s;
     }
 
-    public void renderObjects(Graphics2D g2d) {
+    public void renderObjects(Graphics2D g2d, ArrayList<Object> objects) {
         AffineTransform originalTransform = g2d.getTransform();
         // Synchronize to prevent concurrent modification while iterating
         synchronized (Stage.OBJECTS_LOCK) {
-            for (Object obj : Stage.objects) {
+            for (Object obj : objects) {
                 renderObject(g2d, obj);
                 g2d.setTransform(originalTransform);
             }

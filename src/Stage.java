@@ -6,6 +6,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Stage {
     public volatile int volatileMouseX;
@@ -18,10 +19,14 @@ public class Stage {
     public boolean pauseKeyPressed;
     public boolean paused;
 
-    public double gravity;
+    //public double gravity;
 
     public String interactionMode;
     public int interactionStage;
+
+    public static volatile boolean rememberCanvas;
+    public static volatile int iterationNumber;
+    public static volatile int renderMemory;
 
     public int width;
     public int height;
@@ -77,12 +82,13 @@ public class Stage {
     }
 
     public void initializePhysics() {
+        renderMemory = -1;
         objects = ObjectHandler.createInitialObjects();
         mouseHoverObjectId = -1;
         interactionStage = 0;
         interactionMode = "none";
         //gravity = 1.81;
-        gravity = 0.0;
+        //gravity = 0.0;
         paused = false;
         pauseKeyPressed = false;
     }
@@ -169,11 +175,10 @@ public class Stage {
         for (int i = 0; i < steps; i++) {
             checkPaused();
             if (input.keys.isPressed(KeyEvent.VK_O)) {
-                try {
-                    Thread.sleep(200);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                TaterMath.wait(200);
+            }
+            if (input.keys.isPressed(KeyEvent.VK_I)) {
+                TaterMath.wait(50);
             }
             //while (paused) {
             //    try {
@@ -182,51 +187,52 @@ public class Stage {
             //        e.printStackTrace();
             //    }
             //}
+            //IO.println("");
+            //IO.println(stepsOnFrame);
             stepsOnFrame++;
+            if (!paused) { iterationNumber++; }
             stepPhysics(this.stepSize, paused);
-            frameRendered.set(false); //be careful because a frame could theoretically be rendered before this is set to false
             if (stepsOnFrame >= maxStepsPerFrame) {
                 while (!frameRendered.get()) {
-                    try {
-                        Thread.sleep(1);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                    TaterMath.wait(1);
                 }
             }
+            //IO.println(stepsOnFrame);
 
         }
     }
 
     private void stepPhysics(double stepSize, boolean paused) {
-        if (frameRendered.get()) {
-            if (frameRendered.get()) {
-                if (!paused) {
-                    synchronized (DRAWN_LOCK) {
-                        drawn.points.clear();
-                        drawn.lines.clear();
-                    }
-                }
-                stepsOnFrame = 0;
-                input.mouse.updatePos(volatileMouseX, volatileMouseY);
-                /*if (prevMouseX != mouseX) { prevMouseX = mouseX; }
-                if (prevMouseY != mouseY) { prevMouseY = mouseY; }
-                if (mouseX != volatileMouseX) {
-                    prevMouseX = mouseX;//h
-                    mouseX = volatileMouseX;
-                }
-                if (mouseY != volatileMouseY) {
-                    prevMouseY = mouseY;
-                    mouseY = volatileMouseY;
-                }*/
-            }
-            input.mouse.updateStepChange();
-            interactions(paused); //also deletes old drawn lines and points, since this is the first object lock
+        // Consume the render tick once so physics behavior does not diverge on non-rendered substeps.
+        boolean newFrame = frameRendered.getAndSet(false);
+        if (newFrame) {
             if (!paused) {
-                worldForces(stepSize);
-                applyVelocity(stepSize);
+                synchronized (DRAWN_LOCK) {
+                    drawn.points.clear();
+                    drawn.lines.clear();
+                }
             }
+            stepsOnFrame = 0;
+            input.mouse.updatePos(volatileMouseX, volatileMouseY);
+            /*if (prevMouseX != mouseX) { prevMouseX = mouseX; }
+            if (prevMouseY != mouseY) { prevMouseY = mouseY; }
+            if (mouseX != volatileMouseX) {
+                prevMouseX = mouseX;//h
+                mouseX = volatileMouseX;
+            }
+            if (mouseY != volatileMouseY) {
+                prevMouseY = mouseY;
+                mouseY = volatileMouseY;
+            }*/
         }
+
+        input.mouse.updateStepChange();
+        interactions(paused, newFrame); //also deletes old drawn lines and points, since this is the first object lock
+        if (!paused) {
+            worldForces(stepSize);
+            applyVelocity(stepSize);
+        }
+
         if (!paused) {
             synchronized (OBJECTS_LOCK) {
                 for (Object obj : objects) {
@@ -234,21 +240,60 @@ public class Stage {
                 }
                 ObjectHandler.collisionCalcs(objects);
             }
+            applyDeferredPosChanges();
+        }
+    }
+
+    private void applyDeferredPosChanges() {
+        synchronized (OBJECTS_LOCK) {
+            for (Object obj : objects) {
+                if (obj.posChange.x != 0 || obj.posChange.y != 0) {
+                    obj.pos = obj.pos.add(obj.posChange);
+                    obj.posChange.set(0, 0);
+                }
+            }
         }
     }
 
     private void checkPaused() {
-        if (input.keys.isPressed(KeyEvent.VK_P) && !pausedByToggle && !pauseKeyPressed) {
-            pausedByToggle = true;
-        } else if (input.keys.isPressed(KeyEvent.VK_P) && pausedByToggle && !pauseKeyPressed) {
-            pausedByToggle = false;
+        if (input.keys.isPressed(KeyEvent.VK_M)) {
+            if (renderMemory == -1) {
+                renderMemory = 0;
+            } else if (input.keys.isPressed(KeyEvent.VK_UP) && renderMemory > 0) {
+                renderMemory--;
+            } else if (input.keys.isPressed(KeyEvent.VK_DOWN)) {
+                renderMemory++;
+            } else if (input.keys.isPressed(KeyEvent.VK_LEFT) && renderMemory > 0) {
+                renderMemory--;
+                TaterMath.wait(100);
+            } else if (input.keys.isPressed(KeyEvent.VK_RIGHT)) {
+                renderMemory++;
+                TaterMath.wait(100);
+            }
+        } else {
+            renderMemory = -1;
         }
-        pauseKeyPressed = input.keys.isPressed(KeyEvent.VK_P);
-        paused = pausedByToggle || input.keys.isPressed(KeyEvent.VK_SPACE);
+
+        if (renderMemory == -1) {
+            if (input.keys.isPressed(KeyEvent.VK_P) && !pausedByToggle && !pauseKeyPressed) {
+                pausedByToggle = true;
+            } else if (input.keys.isPressed(KeyEvent.VK_P) && pausedByToggle && !pauseKeyPressed) {
+                pausedByToggle = false;
+            }
+            pauseKeyPressed = input.keys.isPressed(KeyEvent.VK_P);
+            paused = pausedByToggle || input.keys.isPressed(KeyEvent.VK_SPACE);
+            rememberCanvas = input.keys.isPressed(KeyEvent.VK_Z);
+        } else {
+            paused = true;
+        }
+        // Hold R to capture rendered frames into canvas memory.
     }
 
-    private void interactions(boolean paused) {
+    private void interactions(boolean paused, boolean newFrame) {
         synchronized (OBJECTS_LOCK) {
+            if (input.keys.isPressed(KeyEvent.VK_R)) {
+                objects = ObjectHandler.createInitialObjects();
+            }
             if (interactionMode.equals("none")) {
                 int oldHoverId = mouseHoverObjectId;
                 mouseHoverObjectId = ObjectHandler.mouseHoveredObject(input.mouse.pos, objects);
@@ -275,7 +320,7 @@ public class Stage {
                         return;
                     }
                     Object obj = objects.get(mouseHoverObjectId);
-                    obj.pos.increase(input.mouse.stepChange);
+                    if (newFrame) { obj.pos.increase(input.mouse.stepChange); }
                     obj.vel = input.mouse.stepChange.div(stepSize); //i don't get why i have to divide by stepsize here but ok
                 }
             }
@@ -285,9 +330,10 @@ public class Stage {
     private void worldForces(double stepSize) {
         synchronized (OBJECTS_LOCK) {
             for (Object obj : objects) {
-                if (obj.mass != 0 && !(interactionMode.equals("drag") && obj.index == mouseHoverObjectId)) {
+                /*if (obj.mass != 0 && !(interactionMode.equals("drag") && obj.index == mouseHoverObjectId)) {
                     obj.vel.y += gravity * stepSize;
-                }
+                }*/
+                obj.vel = obj.vel.add(obj.setAcceleration);
             }
         }
     }

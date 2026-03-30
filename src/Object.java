@@ -26,6 +26,7 @@ public class Object {
     public double friction;
     public double restitution;
 
+    public Vec setAcceleration;
 
     public Vec vel; //linear velocity
     public double angularVel; //angular velocity
@@ -33,6 +34,7 @@ public class Object {
 
     public Vec velChange;
     public double angularVelChange;
+    public Vec posChange;
 
     public double inertia; //mass moment of inertia
     public double inverseInertia;
@@ -40,12 +42,12 @@ public class Object {
     public double inverseMass;
 
 
-    public Object(Color color, double x, double y, double rotation, Vec[] points, int index) { //polygon shape
+    public Object(Color color, double x, double y, double rotation, Vec[] points, int index, Vec setAcceleration) { //polygon shape
         //make sure all shapes are clockwise for now
         this.pos = new Vec(x, y);
         this.vel = new Vec(0.0, 0.0);
         this.rotation = rotation;
-        this.angularVel = 0.4;
+        this.angularVel = 0;
         this.type = "polygon";
         this.color = color;
         this.density = 1.0;
@@ -56,6 +58,9 @@ public class Object {
         this.rel = Vec.copyArray(this.setRel);
         this.velChange = new Vec(0.0, 0.0);
         this.angularVelChange = 0.0;
+        this.posChange = new Vec(0.0, 0.0);
+        this.friction = 0.7;
+        this.setAcceleration = setAcceleration;
 
         PropertiesCalc(this.setRel, 1.0, this.density);
         if (this.mass != 0) {
@@ -70,13 +75,13 @@ public class Object {
         }
     }
 
-    public Object(Color color, double x, double y, double rotation, double width, double height, int index) { //rectangle
+    public Object(Color color, double x, double y, double rotation, double width, double height, int index, Vec setAcceleration) { //rectangle
         this(color, x, y, rotation, new Vec[] {
             new Vec(width / 2, height / 2),
             new Vec(width / 2, height / -2),
             new Vec(width / -2, height / -2),
             new Vec(width / -2, height / 2)}
-        , index);
+        , index, setAcceleration);
         //this.pos.x = x;
         //this.pos.y = y;
     }/* else if (type.equals("circle")) {

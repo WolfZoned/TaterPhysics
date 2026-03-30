@@ -43,4 +43,16 @@ public class TaterMath {
         }
     }
 
+    public static Vec tangent(Vec relVel, Vec normal) {
+        // Remove the normal component to get tangential slip velocity at contact.
+        return relVel.sub(normal.mul(relVel.dot(normal)));
+    }
+
+    public static void wait(int time) {
+        try {
+            Thread.sleep(time);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

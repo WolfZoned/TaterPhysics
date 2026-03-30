@@ -3,17 +3,56 @@ import java.awt.*;
 import java.util.ArrayList;
 
 public class ObjectHandler {
+    private static final double EPAPointEpsilon = 1e-6;
+    private static final double EPAConvergenceEpsilon = 1e-5;
+    private static final double EPAMinEdgeLenSquared = 1e-12;
+    private static final double EPAMinNormalLenSquared = 1e-12;
+    private static final double EPAMaxMTVOverlap = 1.5;
+
+    public static class CollisionStore {
+        public Object objA;
+        public Object objB;
+        public Vec normal;
+        public Vec contact;
+        public double j;
+        public Vec relVel;
+        public Vec raPerp;
+        public Vec rbPerp;
+        public Vec objAPos;
+        public Vec objBPos;
+
+        public CollisionStore(Object objA, Object objB, Vec normal, Vec contact, double j, Vec relVel, Vec raPerp, Vec rbPerp, Vec objAPos, Vec objBPos) {
+            this.objA = objA;
+            this.objB = objB;
+            this.normal = normal;
+            this.contact = contact;
+            this.j = j;
+            this.relVel = relVel;
+            this.raPerp = raPerp;
+            this.rbPerp = rbPerp;
+            this.objAPos = objAPos;
+            this.objBPos = objBPos;
+        }
+
+    }
+
     public static ArrayList<Object> createInitialObjects() {
         // Create a rectangle object
         ArrayList<Object> objects = new ArrayList<>();
-        objects.add(new Object(new Color(200, 0, 0), 210, 200, 0.0, 100, 50, objects.size()));
+        objects.add(new Object(new Color(200, 0, 0), 575, 1000, 0.0, 1100, 1100, objects.size(), new Vec(0, 0)));
+        objects.add(new Object(new Color(50, 0, 250), 450, 550, 0.0, 30, 30, objects.size(), new Vec(0, 0.3)));
+        objects.add(new Object(new Color(50, 0, 250), 500, 550, 0.0, 30, 30, objects.size(), new Vec(0, 0.3)));
+        objects.add(new Object(new Color(50, 0, 250), 550, 550, 0.0, 30, 30, objects.size(), new Vec(0, 0.3)));
         // Create a custom shape object (triangle)
         Vec[] setRel = new Vec[] {
             new Vec(2, 32),
             new Vec(27, -13),
             new Vec(-23, -13)
         };
-        objects.add(new Object(new Color(0, 177, 0), 350, 200, 0.0, setRel, objects.size()));
+        Object triangle = new Object(new Color(0, 177, 0), 800, 200, 0.0, setRel, objects.size(), new Vec(0, 0.3));
+        //triangle.angularVel=1;
+        //triangle.vel = new Vec(2, 1);
+        objects.add(triangle);
         return objects;
     }
 
@@ -30,6 +69,8 @@ public class ObjectHandler {
     }
 
     public static void collisionCalcs(ArrayList<Object> objects) {
+
+        ArrayList<CollisionStore> collisionStorage = new ArrayList<>();
         for (Object obj : objects) {
             if (obj != null && obj.type.equals("polygon")) {
                 obj.boundingBox.calc(obj.rel, obj.pos);
@@ -41,20 +82,32 @@ public class ObjectHandler {
                 for (int j = i + 1; j < objects.size(); j++) {
                     Object objB = objects.get(j);
                     if (objB != null && objB.type.equals("polygon")) {
-                        polygonPolygonCollision(objA, objB);
+                        CollisionStore temp = polygonPolygonCollision(objA, objB);
+                        if (temp != null) {
+                            collisionStorage.add(temp);
+                        }
                     }
                 }
             }
         }
+        for (int i = 0; i < collisionStorage.size(); i++) {
+            applyFrictionImpulse(collisionStorage.get(i).objA, collisionStorage.get(i).objB, collisionStorage.get(i).normal, collisionStorage.get(i).contact, collisionStorage.get(i).j, collisionStorage.get(i).relVel, collisionStorage.get(i).raPerp, collisionStorage.get(i).rbPerp, collisionStorage.get(i).objAPos, collisionStorage.get(i).objBPos);
+        }
     }
 
-    private static void polygonPolygonCollision(Object objA, Object objB) {
+    private static CollisionStore polygonPolygonCollision(Object objA, Object objB) {
         if (polygonBoundingBoxCollision(objA.boundingBox, objB.boundingBox)) {
             synchronized (Stage.DRAWN_LOCK) {
                 ArrayList<Vec> simplexList = new ArrayList<Vec>();
                 if (GJKCollision(objA, objB, simplexList)) {
                     Vec MTV = EPACollision(objA, objB, simplexList);
                     if (MTV != null) {
+                        MTV = clampMTVToOverlap(objA.boundingBox, objB.boundingBox, MTV);
+                        if (MTV == null) {
+                            objA.boundingBox.boxColor = new Color(100, 0, 255, 255);
+                            objB.boundingBox.boxColor = new Color(100, 0, 255, 255);
+                            return null;
+                        }
                         // make sure MTV points from A to B for consistent correction/impulse direction
                         Vec centerDelta = objB.pos.sub(objA.pos);
                         if (Vec.dot(MTV, centerDelta) < 0) {
@@ -62,10 +115,19 @@ public class ObjectHandler {
                         }
                         objA.boundingBox.boxColor = new Color(72, 255, 0, 255);
                         objB.boundingBox.boxColor = new Color(72, 255, 0, 255);
-                        objA.pos = objA.pos.add(MTV.mul(-0.5));
-                        objB.pos = objB.pos.add(MTV.mul(0.5));
-                        Vec contact = findContactPoints(objA, objB);
-                        if (contact != null) { applyImpulse(objA, objB, MTV, contact); }
+                        //objA.pos = objA.pos.add(MTV.mul(-0.5));
+                        //objB.pos = objB.pos.add(MTV.mul(0.5));
+                        //IO.println(MTV);
+                        //return null;
+                        objA.posChange.increase(MTV.mul(-0.5));
+                        objB.posChange.increase(MTV.mul(0.5));
+                        Vec contact = findContactPoints(objA, objB, objA.pos.add(MTV.mul(-0.5)), objB.pos.add(MTV.mul(0.5)));
+                        if (contact != null) {
+                            CollisionStore impulseResult = applyImpulse(objA, objB, MTV, contact, objA.pos.add(MTV.mul(-0.5)), objB.pos.add(MTV.mul(0.5)));
+                            if (impulseResult != null) {
+                            }
+                            return impulseResult;
+                        }
                     } else {
                         objA.boundingBox.boxColor = new Color(100, 0, 255, 255);
                         objB.boundingBox.boxColor = new Color(100, 0, 255, 255);
@@ -73,6 +135,31 @@ public class ObjectHandler {
                 }
             }
         }
+        return null;
+    }
+
+    private static Vec clampMTVToOverlap(Object.BoundingBox bbA, Object.BoundingBox bbB, Vec mtv) {
+        if (!isFiniteVec(mtv)) {
+            return null;
+        }
+        double overlapX = Math.min(bbA.xMax, bbB.xMax) - Math.max(bbA.xMin, bbB.xMin);
+        double overlapY = Math.min(bbA.yMax, bbB.yMax) - Math.max(bbA.yMin, bbB.yMin);
+        if (overlapX <= 0 || overlapY <= 0) {
+            return null;
+        }
+        double maxReasonableMtv = Math.hypot(overlapX, overlapY) * EPAMaxMTVOverlap;
+        double mtvLen = mtv.len();
+        if (!Double.isFinite(mtvLen)) {
+            return null;
+        }
+        if (mtvLen <= maxReasonableMtv + EPAPointEpsilon) {
+            return mtv;
+        }
+        Vec dir = mtv.normalize();
+        if (!isFiniteVec(dir)) {
+            return null;
+        }
+        return dir.mul(maxReasonableMtv);
     }
 
     private static boolean polygonBoundingBoxCollision(Object.BoundingBox bbA, Object.BoundingBox bbB) {
@@ -129,7 +216,7 @@ public class ObjectHandler {
                 check1Passed = false;
                 if (Options.GJK.debug) {IO.println("check 1 failed");}
                 if (!checkGJKPoint(objA, objB, Vec.dirOfPerpendicularBisector(simplexList.get(2), simplexList.get(0)), simplexList, 1, "insert third check style here", 0.0)) {
-                    if (Options.GJK.debug) {IO.println("failed on loop check 1");}https://flavortown.hackclub.com/projects/5129
+                    if (Options.GJK.debug) {IO.println("failed on loop check 1");}
                     return false;
                 }
             }
@@ -188,7 +275,6 @@ public class ObjectHandler {
         Vec minDistVec;
         Vec minDistLineStartingVec;
         Vec minDistLineEndingVec;
-        double minDistAng;
         boolean clockwise = TaterMath.isClockwise(simplexList);
         if (Options.GJK.debug) {IO.println("Original clockwise: " + clockwise + "but is now clockwise");}
         if (!clockwise) {
@@ -200,12 +286,10 @@ public class ObjectHandler {
                 simplexList.set(i, clockwiseVecs[i]);
             }
         }
-        clockwise = TaterMath.isClockwise(simplexList);
         int EPAAttempts = 30;
         Vec tempVec;
         double tempVecDist;
         Vec newVec;
-        double[] EPAMemory = new double[4]; //2 sets of x,y, and index to catch repeating points and terminate early
 
         for  (int i = 0; i < EPAAttempts; i++) {
             if (Options.GJK.debug) {IO.println("New Attempt");}
@@ -213,7 +297,13 @@ public class ObjectHandler {
             minDistLineIndex = -1;
             minDistVec = null;
             for  (int EPACounter = 0; EPACounter < simplexList.size(); EPACounter++) {
-                tempVec = Vec.normDistPoint(new Vec(0, 0), simplexList.get(EPACounter), simplexList.get((EPACounter + 1) % simplexList.size()), true);
+                Vec a = simplexList.get(EPACounter);
+                Vec b = simplexList.get((EPACounter + 1) % simplexList.size());
+                Vec edge = b.sub(a);
+                if (Vec.dot(edge, edge) <= EPAMinEdgeLenSquared) {
+                    continue;
+                }
+                tempVec = Vec.normDistPoint(new Vec(0, 0), a, b, true);
                 tempVecDist = tempVec.len();
                 if (tempVecDist < minDist) {
                     minDistVec = tempVec;
@@ -221,43 +311,44 @@ public class ObjectHandler {
                     minDistLineIndex = EPACounter;
                 }
             }
+            if (minDistLineIndex == -1 || minDistVec == null || !isFiniteVec(minDistVec)) {
+                return null;
+            }
             minDistLineStartingVec = simplexList.get(minDistLineIndex);
             minDistLineEndingVec = simplexList.get((minDistLineIndex + 1) % simplexList.size());
-            Stage.drawn.addCenteredPoint(new Vec.coloredVec(minDistVec, new Color(255, 255, 0, 255)));
-            if (Options.GJK.debug) {IO.println("Closest Line: " + minDistLineStartingVec.x + " " + minDistLineStartingVec.y + "      " + minDistLineEndingVec.x + " " + minDistLineEndingVec.y);}
-            minDistAng = TaterMath.vecToAng(minDistVec.x, minDistVec.y);
-            if (minDistAng == 0) {
-                if (Options.GJK.debug) {IO.println("These shapes are perfectly colliding");}
-                if (Options.GJK.debug) {IO.println("You can port over the code to handle this, but maybe just get gud?");}
+            if (Options.EPA.render.drawMinDistVec) { Stage.drawn.addCenteredPoint(new Vec.coloredVec(minDistVec, new Color(255, 255, 0, 255))); }
+            if (Options.EPA.debug) {IO.println("Closest Line: " + minDistLineStartingVec.x + " " + minDistLineStartingVec.y + "      " + minDistLineEndingVec.x + " " + minDistLineEndingVec.y);}
+            double minDistLenSq = Vec.dot(minDistVec, minDistVec);
+            if (minDistLenSq <= EPAMinNormalLenSquared) {
                 if (Options.EPA.render.drawFailedSimplex) {
                     DrawSimplex(simplexList, Options.EPA.render.failedSimplexColor, 1f);
                 }
                 return null;
             }
-            newVec = findGJKPoint(objA, objB, minDistVec);
-            //checks if simplex already contrains newVec - if it does, then we have found the closest point on the Minkowski Difference to the origin, and can terminate with collision result
-            if (newVec.x == minDistLineStartingVec.x && newVec.y == minDistLineStartingVec.y || newVec.x == minDistLineEndingVec.x && newVec.y == minDistLineEndingVec.y) {
-                Stage.drawn.addCenteredPoint(new Vec.coloredVec(newVec, new Color(0, 255, 255, 255)));
+
+            Vec searchDir = minDistVec.normalize();
+            newVec = findGJKPoint(objA, objB, searchDir);
+            if (!isFiniteVec(newVec)) {
+                return null;
+            }
+
+            double edgeDistance = Vec.dot(minDistVec, searchDir);
+            double supportDistance = Vec.dot(newVec, searchDir);
+            // Converged: advancing support point no longer moves the closest edge meaningfully.
+            if (supportDistance - edgeDistance <= EPAConvergenceEpsilon) {
                 if (Options.EPA.render.drawSucessfulSimplex) {
+                    Stage.drawn.addCenteredPoint(new Vec.coloredVec(newVec, new Color(0, 255, 255, 255)));
                     DrawSimplex(simplexList, Options.EPA.render.successfulSimplexColor, 1f);
                 }
                 return minDistVec;
             }
-            Stage.drawn.addCenteredPoint(new Vec.coloredVec(newVec, new Color(255, 0, 0, 255)));
-            if (EPAMemory[0] == minDistVec.x && EPAMemory[1] == minDistVec.y || EPAMemory[2] == minDistVec.x && EPAMemory[3] == minDistVec.y) {
-                if (Options.GJK.debug) {IO.println("Before terminating, EPA ran for " + EPAAttempts + " attempts");}
-                if (Options.GJK.debug) {IO.println("EPA failed due to repeat of failed point");}
-                if (Options.EPA.render.drawFailedSimplex) {
-                    DrawSimplex(simplexList, Options.EPA.render.failedSimplexColor, 1f);
-                }
-                return null;
+
+            // Repeated support point means no usable expansion left; use current closest edge.
+            if (approximatelyEqual(newVec, minDistLineStartingVec) || approximatelyEqual(newVec, minDistLineEndingVec)) {
+                return minDistVec;
             }
-            if (EPAMemory[0] != 0) {
-                EPAMemory[2] = EPAMemory[0];
-                EPAMemory[3] = EPAMemory[1];
-            }
-            EPAMemory[0] = minDistVec.x;
-            EPAMemory[1] = minDistVec.y;
+
+            if (Options.EPA.render.drawNewVec) { Stage.drawn.addCenteredPoint(new Vec.coloredVec(newVec, new Color(255, 0, 0, 255))); }
             simplexList.add(minDistLineIndex + 1, newVec);
 
         }
@@ -267,9 +358,17 @@ public class ObjectHandler {
         return null;
     }
 
+    private static boolean approximatelyEqual(Vec a, Vec b) {
+        return Math.abs(a.x - b.x) <= EPAPointEpsilon && Math.abs(a.y - b.y) <= EPAPointEpsilon;
+    }
+
+    private static boolean isFiniteVec(Vec v) {
+        return v != null && Double.isFinite(v.x) && Double.isFinite(v.y);
+    }
+
     private static boolean checkGJKPoint(Object objA, Object objB, Vec direction, ArrayList<Vec> simplexList, int pointIndex, String pointCheckStyle, double dirVecLen) {
         simplexList.set(pointIndex, findGJKPoint(objA, objB, direction)); //since the list is already initialized with nulls, we can just replace existing points
-        Stage.drawn.addCenteredPoint(new Vec.coloredVec(simplexList.get(pointIndex), new Color(2, 237, 2, 255)));
+        if (Options.GJK.render.drawNewPoint) { Stage.drawn.addCenteredPoint(new Vec.coloredVec(simplexList.get(pointIndex), new Color(2, 237, 2, 255))); }
         if (pointCheckStyle.equals("insert second check style here")) {
             double normDistBetweenPointsAndOrigin = Vec.normDist(new Vec(0,0), simplexList.get(0), simplexList.get(1), true);
             return normDistBetweenPointsAndOrigin != 0 && normDistBetweenPointsAndOrigin != 1;
@@ -325,7 +424,7 @@ public class ObjectHandler {
         return(Vec.sub(pointB, pointA)); //since the list is already initialized with nulls, we can just replace existing points
     }
 
-    private static Vec findContactPoints(Object objA, Object objB) {
+    private static Vec findContactPoints(Object objA, Object objB, Vec objAPos, Vec objBPos) {
         double tolerance = 0.6;
         int minDistPointIndex1 = 0;
         int minDistPointIndex2 = 0;
@@ -337,13 +436,15 @@ public class ObjectHandler {
         double contactBuild;
         double tempMinDist = Double.MAX_VALUE;
         double tempNormDist;
-        IO.println("");
-        IO.println("");
-        IO.println("Contact Points round 1:");
+        if (Options.ContactPoints.debug) {
+            IO.println("");
+            IO.println("");
+            IO.println("Contact Points round 1:");
+        }
         for  (int i = 0; i < objB.rel.length; i++) {
             for (int j = 0; j < objA.rel.length; j++) {
-                tempNormDist = Vec.normDist(objA.rel[j].add(objA.pos), objB.rel[i].add(objB.pos), objB.rel[(i+1)%objB.rel.length].add(objB.pos),true);
-                contactBuild = Vec.distToNormDistPoint(objA.rel[j].add(objA.pos), objB.rel[i].add(objB.pos), objB.rel[(i+1)%objB.rel.length].add(objB.pos), true, tempNormDist);
+                tempNormDist = Vec.normDist(objA.rel[j].add(objAPos), objB.rel[i].add(objBPos), objB.rel[(i+1)%objB.rel.length].add(objBPos),true);
+                contactBuild = Vec.distToNormDistPoint(objA.rel[j].add(objAPos), objB.rel[i].add(objBPos), objB.rel[(i+1)%objB.rel.length].add(objBPos), true, tempNormDist);
 
                 if ((contactBuild + tolerance) < tempMinDist) {
                     minDistPointIndex2 = -1;
@@ -352,22 +453,22 @@ public class ObjectHandler {
                     minDistLineIndex1 = i;
                     shapeIndex1 = 2;
                     tempMinDist = contactBuild;
-                    IO.println("New min 1 found:      MinPointIndex " + minDistPointIndex1 + "   MinLineIndex " + minDistLineIndex1 + "   MinDist " + tempMinDist);
+                    if (Options.ContactPoints.debug) { IO.println("New min 1 found:      MinPointIndex " + minDistPointIndex1 + "   MinLineIndex " + minDistLineIndex1 + "   MinDist " + tempMinDist); }
                 } else if ((contactBuild - tolerance) < tempMinDist && minDistPointIndex1 != j && minDistPointIndex2 != j) {
                     minDistPointIndex2 = j;
                     minDistLineIndex2 = i;
                     shapeIndex2 = 2;
-                    IO.println("New min 2 found:      MinPointIndex " + minDistPointIndex2 + "   MinLineIndex " + minDistLineIndex2 + "   MinDist " + tempMinDist);
+                    if (Options.ContactPoints.debug) { IO.println("New min 2 found:      MinPointIndex " + minDistPointIndex2 + "   MinLineIndex " + minDistLineIndex2 + "   MinDist " + tempMinDist); }
                 }
             }
 
         }
-        IO.println("");
-        IO.println("Contact Points round 2:");
+        if (Options.ContactPoints.debug) { IO.println(""); }
+        if (Options.ContactPoints.debug) { IO.println("Contact Points round 2:"); }
         for  (int i = 0; i < objA.rel.length; i++) {
             for (int j = 0; j < objB.rel.length; j++) {
-                tempNormDist = Vec.normDist(objB.rel[j].add(objB.pos), objA.rel[i].add(objA.pos), objA.rel[(i+1)%objA.rel.length].add(objA.pos),true);
-                contactBuild = Vec.distToNormDistPoint(objB.rel[j].add(objB.pos), objA.rel[i].add(objA.pos), objA.rel[(i+1)%objA.rel.length].add(objA.pos), true, tempNormDist);
+                tempNormDist = Vec.normDist(objB.rel[j].add(objBPos), objA.rel[i].add(objAPos), objA.rel[(i+1)%objA.rel.length].add(objAPos),true);
+                contactBuild = Vec.distToNormDistPoint(objB.rel[j].add(objBPos), objA.rel[i].add(objAPos), objA.rel[(i+1)%objA.rel.length].add(objAPos), true, tempNormDist);
 
                 if ((contactBuild + tolerance) < tempMinDist) {
                     minDistPointIndex2 = -1;
@@ -376,12 +477,12 @@ public class ObjectHandler {
                     minDistLineIndex1 = i;
                     shapeIndex1 = 1;
                     tempMinDist = contactBuild;
-                    IO.println("New min 1 found:      MinPointIndex " + minDistPointIndex1 + "   MinLineIndex " + minDistLineIndex1 + "   MinDist " + tempMinDist);
+                    if (Options.ContactPoints.debug) { IO.println("New min 1 found:      MinPointIndex " + minDistPointIndex1 + "   MinLineIndex " + minDistLineIndex1 + "   MinDist " + tempMinDist); }
                 } else if ((contactBuild - tolerance) < tempMinDist && minDistPointIndex1 != j && minDistPointIndex2 != j) {
                     minDistPointIndex2 = j;
                     minDistLineIndex2 = i;
                     shapeIndex2 = 1;
-                    IO.println("New min 2 found:      MinPointIndex " + minDistPointIndex2 + "   MinLineIndex " + minDistLineIndex2 + "   MinDist " + tempMinDist);
+                    if (Options.ContactPoints.debug) { IO.println("New min 2 found:      MinPointIndex " + minDistPointIndex2 + "   MinLineIndex " + minDistLineIndex2 + "   MinDist " + tempMinDist); }
                 }
 
             }
@@ -389,41 +490,42 @@ public class ObjectHandler {
         Vec contact;
         Vec contact1;
         Vec contact2 = null;
-        IO.println("");
-        IO.println("Shape A index: " + objA.index + "   Shape A length: " + objA.rel.length + "   Shape B index: " + objB.index + "   Shape B length: " + objB.rel.length);
-        IO.println("MinDistPointIndex1: " + minDistPointIndex1 + "   ShapeIndex1: " + shapeIndex1 + "   MinDistPointIndex2: " + minDistPointIndex2 + "   ShapeIndex2: " + shapeIndex2);
+        if (Options.ContactPoints.debug) {
+            IO.println("");
+            IO.println("Shape A index: " + objA.index + "   Shape A length: " + objA.rel.length + "   Shape B index: " + objB.index + "   Shape B length: " + objB.rel.length);
+            IO.println("MinDistPointIndex1: " + minDistPointIndex1 + "   ShapeIndex1: " + shapeIndex1 + "   MinDistPointIndex2: " + minDistPointIndex2 + "   ShapeIndex2: " + shapeIndex2);
+        }
         if (shapeIndex1 == 1) {
-            contact1 = objB.rel[minDistPointIndex1].add(objB.pos);
+            contact1 = objB.rel[minDistPointIndex1].add(objBPos);
         } else if (shapeIndex1 == 2) {
-            contact1 = objA.rel[minDistPointIndex1].add(objA.pos);
+            contact1 = objA.rel[minDistPointIndex1].add(objAPos);
         } else {
-            IO.println("ERROR: No contact point found");
+            if (Options.ContactPoints.debug) { IO.println("ERROR: No contact point found"); }
             return null;
         }
         if (shapeIndex2 == 1) {
-            contact2 = objB.rel[minDistPointIndex2].add(objB.pos);
+            contact2 = objB.rel[minDistPointIndex2].add(objBPos);
         } else if (shapeIndex2 == 2) {
-            contact2 = objA.rel[minDistPointIndex2].add(objA.pos);
+            contact2 = objA.rel[minDistPointIndex2].add(objAPos);
         }
         if (shapeIndex2 == -1) {
             contact = contact1;
         } else {
             contact = Vec.div(contact1.add(contact2),2);
         }
-        Stage.drawn.points.add(new Vec.coloredVec(contact1, new Color(20, 66, 6, 255)));
+        if (Options.ContactPoints.render.drawDoubleContactPoints) { Stage.drawn.points.add(new Vec.coloredVec(contact1, new Color(20, 66, 6, 255))); }
         if  (shapeIndex2 != -1) {
-            Stage.drawn.points.add(new Vec.coloredVec(contact2, new Color(20, 66, 6, 255)));
+            if (Options.ContactPoints.render.drawDoubleContactPoints) { Stage.drawn.points.add(new Vec.coloredVec(contact2, new Color(20, 66, 6, 255))); }
         }
-        Stage.drawn.points.add(new Vec.coloredVec(contact, new Color(61, 255, 0, 255)));
+        if (Options.ContactPoints.render.drawMainContactPoint) { Stage.drawn.points.add(new Vec.coloredVec(contact, new Color(61, 255, 0, 255))); }
         return contact;
     }
 
-    private static void applyImpulse(Object objA, Object objB, Vec MTV, Vec r) {
-        //contact and "r" are the same thing            MTV and simplexDist are the same thing
-
+    private static CollisionStore applyImpulse(Object objA, Object objB, Vec MTV, Vec r, Vec objAPos, Vec objBPos) {
+        //contact and "r" are the same thing           MTV and simplexDist are the same thing
         Vec normal = MTV.normalize();
-        Vec ra = r.sub(objA.pos);
-        Vec rb = r.sub(objB.pos);
+        Vec ra = r.sub(objAPos);
+        Vec rb = r.sub(objBPos);
         Vec raPerp = new Vec(0-ra.y, ra.x);
         Vec rbPerp = new Vec(0-rb.y, rb.x);
         Vec relVel = TaterMath.relVel(objB, rbPerp).sub(TaterMath.relVel(objA, raPerp));
@@ -431,11 +533,11 @@ public class ObjectHandler {
         double rbPerpDotN = Vec.dot(rbPerp, normal);
         double denominator = (objA.inverseMass + objB.inverseMass) + ((raPerpDotN * raPerpDotN) * objA.inverseInertia) + ((rbPerpDotN * rbPerpDotN) * objB.inverseInertia);
         if (denominator == 0) {
-            return;
+            return null;
         }
-        double relVelDotN = Vec.dot(relVel, normal);
+        double relVelDotN = Vec.dot(relVel, normal); //contact vel mag
         if (relVelDotN > 0) {
-            return;
+            return null;
         }
         double j = (-(1 + (objA.restitution * objB.restitution)) * relVelDotN) / denominator;
         Vec impulse = normal.mul(j);
@@ -443,8 +545,36 @@ public class ObjectHandler {
         objA.angularVelChange -= objA.inverseInertia * Vec.cross(ra, impulse);
         objB.velChange = objB.velChange.add(impulse.mul(objB.inverseMass));
         objB.angularVelChange += objB.inverseInertia * Vec.cross(rb, impulse);
+        return new CollisionStore(objA, objB, normal, r, j, relVel, raPerp, rbPerp, objAPos, objBPos); //Missing the static seperators or whatever
+    }
 
-        //Missing the static seperators or whatever
+    private static void applyFrictionImpulse(Object objA, Object objB, Vec normal, Vec contact, double j, Vec relVel, Vec raPerp, Vec rbPerp, Vec objAPos, Vec objBPos) {
+        Vec tangent = TaterMath.tangent(relVel, normal); //tangent is used in place of normal
+        if (Math.abs(tangent.x) < 0.0001 && Math.abs(tangent.y) < 0.0001) {
+            return;
+        }
+        tangent = tangent.normalize();
+        double staticFriction = objA.friction * objB.friction;
+        double kineticFriction = objA.friction * objB.friction * 0.8;
+
+        double raPerpDotN = Vec.dot(raPerp, tangent);
+        double rbPerpDotN = Vec.dot(rbPerp, tangent);
+        double denominator = (objA.inverseMass + objB.inverseMass) + ((raPerpDotN * raPerpDotN) * objA.inverseInertia) + ((rbPerpDotN * rbPerpDotN) * objB.inverseInertia);
+        if (Math.abs(denominator) < 1e-12) {
+            return;
+        }
+        double jFriction = -relVel.dot(tangent) / denominator;
+        Vec impulse;
+        if (Math.abs(jFriction) <= (j * staticFriction)) {
+            impulse = tangent.mul(jFriction);
+        } else {
+            impulse = tangent.mul(-Math.signum(relVel.dot(tangent)) * j * kineticFriction);
+        }
+        objA.velChange = objA.velChange.sub(impulse.mul(objA.inverseMass));
+        objA.angularVelChange -= objA.inverseInertia * Vec.cross(contact.sub(objAPos), impulse);
+        objB.velChange = objB.velChange.add(impulse.mul(objB.inverseMass));
+        objB.angularVelChange += objB.inverseInertia * Vec.cross(contact.sub(objBPos), impulse);
+
     }
 
     private static void DrawSimplex(ArrayList<Vec> simplexList, Color color, float width) {
