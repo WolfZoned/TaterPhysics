@@ -102,16 +102,16 @@ public class Stage {
         frame.add(canvas);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
-        //frame.addComponentListener(new ComponentAdapter() {
-        //    @Override
-        //    public void componentResized(ComponentEvent e) {
-        //        width = canvas.getWidth();
-        //        height = canvas.getHeight();
-        //
-        //        // If you need to update any cached values:
-        //        drawn.SetVarsCauseImDumbAndDontKnowABetterWayToDoThis(width, height);
-        //    }
-        //});
+        frame.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                width = canvas.getWidth();
+                height = canvas.getHeight();
+
+                // If you need to update any cached values:
+                drawn.SetVarsCauseImDumbAndDontKnowABetterWayToDoThis(width, height);
+            }
+        });
 
 
         drawn.SetVarsCauseImDumbAndDontKnowABetterWayToDoThis(width, height);
