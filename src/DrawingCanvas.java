@@ -118,7 +118,8 @@ public class DrawingCanvas extends JComponent {
     protected void paintComponent(Graphics g) {
         //super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
-
+        width = Stage.drawn.stageWidth;
+        height = Stage.drawn.stageHeight;
         if (Stage.renderMemory == -1) {
             paintFrame(g2d, -1, Stage.objects, mouseX, mouseY, stepsOnFrame, null, null);
             if (Stage.rememberCanvas && Stage.iterationNumber != lastIterationNumber) {

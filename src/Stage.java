@@ -29,8 +29,8 @@ public class Stage {
     public static volatile int iterationNumber;
     public static volatile int renderMemory;
 
-    public int width;
-    public int height;
+    public volatile int width;
+    public volatile int height;
     public int scale;
     public JTextArea textArea;
     private DrawingCanvas canvas;  // Store canvas reference
