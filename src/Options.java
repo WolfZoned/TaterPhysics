@@ -1,7 +1,9 @@
 import java.awt.*;
 
 public class Options {
-
+    public static class Object {
+        public static final boolean logCreation = false;
+    }
 
     public static class AABB {
         public static final boolean render = false;

@@ -105,19 +105,10 @@ public class DrawingCanvas extends JComponent {
             return snapshot;
         }
         for (Object obj : source) {
-            if (obj == null || !"polygon".equals(obj.type)) {
+            if (obj == null) {
                 continue;
             }
-            Object copy = new Object(obj.color, obj.pos.x, obj.pos.y, obj.rotation, Vec.copyArray(obj.rel), obj.index, obj.setAcceleration.copy());
-            copy.pos = obj.pos.copy();
-            copy.rotation = obj.rotation;
-            copy.rel = Vec.copyArray(obj.rel);
-            copy.outlined = obj.outlined;
-            copy.boundingBox.xMin = obj.boundingBox.xMin;
-            copy.boundingBox.xMax = obj.boundingBox.xMax;
-            copy.boundingBox.yMin = obj.boundingBox.yMin;
-            copy.boundingBox.yMax = obj.boundingBox.yMax;
-            copy.boundingBox.boxColor = obj.boundingBox.boxColor;
+            Object copy = obj.clone();
             snapshot.add(copy);
         }
         return snapshot;
@@ -188,5 +179,10 @@ public class DrawingCanvas extends JComponent {
             g2d.drawString("Rendering memory from iteration " + memoryIndex, 10, 80 + renderHeight);
             renderHeight += 20;
         }
+        Image image = new ImageIcon("src/trashcan.png").getImage();
+        double imageWidth = image.getWidth(null);
+        double imageHeight = image.getHeight(null);
+        g2d.drawImage(image, width - 90, height - 135, (int) (imageWidth * 4), (int) (imageHeight * 4), null);
+        //IO.println("rendered at size" + (int) (imageWidth * 4) + "   " + (int) (imageHeight * 4));
     }
 }

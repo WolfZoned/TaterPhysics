@@ -37,31 +37,30 @@ public class ObjectHandler {
     }
 
     public static ArrayList<Object> createInitialObjects() {
-        // Create a rectangle object
         ArrayList<Object> objects = new ArrayList<>();
-        objects.add(new Object(new Color(200, 0, 0), 575, 1000, 0.0, 1100, 1100, objects.size(), new Vec(0, 0)));
-        objects.add(new Object(new Color(50, 0, 250), 450, 550, 0.0, 30, 30, objects.size(), new Vec(0, 0.3)));
-        objects.add(new Object(new Color(50, 0, 250), 500, 550, 0.0, 30, 30, objects.size(), new Vec(0, 0.3)));
-        objects.add(new Object(new Color(50, 0, 250), 550, 550, 0.0, 30, 30, objects.size(), new Vec(0, 0.3)));
-        // Create a custom shape object (triangle)
-        Vec[] setRel = new Vec[] {
-            new Vec(2, 32),
-            new Vec(27, -13),
-            new Vec(-23, -13)
-        };
-        Object triangle = new Object(new Color(0, 177, 0), 800, 200, 0.0, setRel, objects.size(), new Vec(0, 0.3));
-        //triangle.angularVel=1;
-        //triangle.vel = new Vec(2, 1);
-        objects.add(triangle);
+        objects.add(Object.createRectangle(new Color(200, 0, 0), 575, 1200, 0.0, 1100, 1100, objects.size(), new Vec(0, 0), true, false));
+        //objects.get(0).angularVel = 0.01;
+        objects.add(Object.createRectangle(new Color(200, 0, 0), 450, 550, 0.0, 30, 30, objects.size(), new Vec(0, 0), false, true));
+        objects.add(Object.createRectangle(new Color(50, 0, 250), 500, 550, 0.0, 30, 30, objects.size(), new Vec(0, 0.3), false, false));
+        objects.add(Object.createPolygon(new Color(0, 250, 221), 400, 550, 0.0, 30, 30, 5, objects.size(), new Vec(0, 0.3), false, false));
+        objects.add(Object.createPolygon(new Color(0, 250, 121), 400, 550, 0.0, 60, 60, 3, objects.size(), new Vec(0, 0.3), false, false));
+        objects.add(Object.createPolygon(new Color(0, 150, 221), 450, 500, 0.0, 60, 60, 8, objects.size(), new Vec(0, 0.3), false, false));
+        objects.add(Object.createCircle(new Color(250, 250, 0), 500, 500, 0.0, 30, objects.size(), new Vec(0, 0.3), false, false));
         return objects;
     }
 
     public static int mouseHoveredObject(Vec mousePos, ArrayList<Object> objects) {
         for (int i = objects.size() - 1; i >= 0; i--) {
             Object obj = objects.get(i);
-            if (obj != null && obj.type.equals("polygon")) {
-                if (obj.isPointInside(mousePos)) {
-                    return obj.index;
+            if (obj != null) {
+                if (obj.type.equals("polygon")) {
+                    if (obj.isPointInside(mousePos)) {
+                        return obj.index;
+                    }
+                } else if (obj.type.equals("circle")) {
+                    if (Vec.len(mousePos, obj.pos) <= obj.radius) {
+                        return obj.index;
+                    }
                 }
             }
         }
@@ -72,19 +71,33 @@ public class ObjectHandler {
 
         ArrayList<CollisionStore> collisionStorage = new ArrayList<>();
         for (Object obj : objects) {
-            if (obj != null && obj.type.equals("polygon")) {
-                obj.boundingBox.calc(obj.rel, obj.pos);
+            if (obj != null) {
+                if  (obj.type.equals("polygon")) {
+                    obj.boundingBox.polygonCalc(obj.rel, obj.pos);
+                } else if (obj.type.equals("circle")) {
+                    obj.boundingBox.circleCalc(obj.radius, obj.pos);
+                }
             }
         }
         for (int i = 0; i < objects.size(); i++) {
             Object objA = objects.get(i);
-            if (objA != null && objA.type.equals("polygon")) {
+            if (objA != null) {
                 for (int j = i + 1; j < objects.size(); j++) {
                     Object objB = objects.get(j);
-                    if (objB != null && objB.type.equals("polygon")) {
-                        CollisionStore temp = polygonPolygonCollision(objA, objB);
-                        if (temp != null) {
-                            collisionStorage.add(temp);
+                    if (objB != null) {
+                        if (!objA.linearStatic || !objB.linearStatic || !objA.angularStatic || !objB.angularStatic) {
+                            CollisionStore temp = null;
+                            if (objA.type.equals("circle") && objB.type.equals("circle")) {
+                                //temp = circleCollision(objA, objB);
+                            } else {
+                                temp = polygonCollision(objA, objB);
+                            }
+                            //} else if (objA.type.equals("circle") && objB.type.equals("polygon") || objA.type.equals("polygon") && objB.type.equals("circle")) {
+                            //} else if (objA.type.equals("circle") && objB.type.equals("circle")) {
+                            //}
+                            if (temp != null) {
+                                collisionStorage.add(temp);
+                            }
                         }
                     }
                 }
@@ -95,10 +108,10 @@ public class ObjectHandler {
         }
     }
 
-    private static CollisionStore polygonPolygonCollision(Object objA, Object objB) {
-        if (polygonBoundingBoxCollision(objA.boundingBox, objB.boundingBox)) {
+    private static CollisionStore polygonCollision(Object objA, Object objB) {
+        if (boundingBoxCollision(objA.boundingBox, objB.boundingBox)) {
             synchronized (Stage.DRAWN_LOCK) {
-                ArrayList<Vec> simplexList = new ArrayList<Vec>();
+                ArrayList<Vec> simplexList = new ArrayList<>();
                 if (GJKCollision(objA, objB, simplexList)) {
                     Vec MTV = EPACollision(objA, objB, simplexList);
                     if (MTV != null) {
@@ -115,15 +128,41 @@ public class ObjectHandler {
                         }
                         objA.boundingBox.boxColor = new Color(72, 255, 0, 255);
                         objB.boundingBox.boxColor = new Color(72, 255, 0, 255);
+                        //Stage.drawn.addCenteredLine(new Vec.coloredLine(new Vec(0, 0), MTV.normalize().mul(60), new Color(255, 0, 255, 255), 3));
                         //objA.pos = objA.pos.add(MTV.mul(-0.5));
                         //objB.pos = objB.pos.add(MTV.mul(0.5));
                         //IO.println(MTV);
                         //return null;
-                        objA.posChange.increase(MTV.mul(-0.5));
-                        objB.posChange.increase(MTV.mul(0.5));
-                        Vec contact = findContactPoints(objA, objB, objA.pos.add(MTV.mul(-0.5)), objB.pos.add(MTV.mul(0.5)));
+                        //IO.println("Collision detected with MTV: " + MTV.x + ", " + MTV.y);
+                        Vec objAPosChange;// = MTV.mul(-0.5);
+                        Vec objBPosChange;// = MTV.mul(0.5);
+                        if (objA.linearStatic && !objB.linearStatic) {
+                            objAPosChange = new Vec();
+                            objBPosChange = MTV;
+                        } else if (!objA.linearStatic && objB.linearStatic) {
+                            objAPosChange = MTV.mul(-1);
+                            objBPosChange = new Vec();
+                        } else {
+                            // Apply position correction proportionally to inverse mass (mass-weighted)
+                            double totalInverseMass = objA.inverseMass + objB.inverseMass;
+                            if (totalInverseMass > 0) {
+                                double ratioA = objA.inverseMass / totalInverseMass;
+                                double ratioB = objB.inverseMass / totalInverseMass;
+                                objAPosChange = MTV.mul(-ratioA);
+                                objBPosChange = MTV.mul(ratioB);
+                            } else {
+                                // just in case both are static
+                                objAPosChange = MTV.mul(-0.5);
+                                objBPosChange = MTV.mul(0.5);
+                            }
+                        }
+                        objA.posChange.increase(objAPosChange);
+                        objB.posChange.increase(objBPosChange);
+                        Vec contact = findContactPoints(objA, objB, objA.pos.add(objAPosChange), objB.pos.add(objBPosChange));
+
+                        //return null;
                         if (contact != null) {
-                            CollisionStore impulseResult = applyImpulse(objA, objB, MTV, contact, objA.pos.add(MTV.mul(-0.5)), objB.pos.add(MTV.mul(0.5)));
+                            CollisionStore impulseResult = applyImpulse(objA, objB, MTV, contact, objA.pos, objB.pos);
                             if (impulseResult != null) {
                             }
                             return impulseResult;
@@ -137,6 +176,72 @@ public class ObjectHandler {
         }
         return null;
     }
+
+    /*private static CollisionStore circleCollision(Object objA, Object objB) {
+        synchronized (Stage.DRAWN_LOCK) {
+            if (GJKCollision(objA, objB, simplexList)) {
+                Vec MTV = EPACollision(objA, objB, simplexList);
+                if (MTV != null) {
+                    MTV = clampMTVToOverlap(objA.boundingBox, objB.boundingBox, MTV);
+                    if (MTV == null) {
+                        objA.boundingBox.boxColor = new Color(100, 0, 255, 255);
+                        objB.boundingBox.boxColor = new Color(100, 0, 255, 255);
+                        return null;
+                    }
+                    // make sure MTV points from A to B for consistent correction/impulse direction
+                    Vec centerDelta = objB.pos.sub(objA.pos);
+                    if (Vec.dot(MTV, centerDelta) < 0) {
+                        MTV = MTV.mul(-1);
+                    }
+                    objA.boundingBox.boxColor = new Color(72, 255, 0, 255);
+                    objB.boundingBox.boxColor = new Color(72, 255, 0, 255);
+                    //Stage.drawn.addCenteredLine(new Vec.coloredLine(new Vec(0, 0), MTV.normalize().mul(60), new Color(255, 0, 255, 255), 3));
+                    //objA.pos = objA.pos.add(MTV.mul(-0.5));
+                    //objB.pos = objB.pos.add(MTV.mul(0.5));
+                    //IO.println(MTV);
+                    //return null;
+                    //IO.println("Collision detected with MTV: " + MTV.x + ", " + MTV.y);
+                    Vec objAPosChange;// = MTV.mul(-0.5);
+                    Vec objBPosChange;// = MTV.mul(0.5);
+                    if (objA.linearStatic && !objB.linearStatic) {
+                        objAPosChange = new Vec();
+                        objBPosChange = MTV;
+                    } else if (!objA.linearStatic && objB.linearStatic) {
+                        objAPosChange = MTV.mul(-1);
+                        objBPosChange = new Vec();
+                    } else {
+                        // Apply position correction proportionally to inverse mass (mass-weighted)
+                        double totalInverseMass = objA.inverseMass + objB.inverseMass;
+                        if (totalInverseMass > 0) {
+                            double ratioA = objA.inverseMass / totalInverseMass;
+                            double ratioB = objB.inverseMass / totalInverseMass;
+                            objAPosChange = MTV.mul(-ratioA);
+                            objBPosChange = MTV.mul(ratioB);
+                        } else {
+                            // just in case both are static
+                            objAPosChange = MTV.mul(-0.5);
+                            objBPosChange = MTV.mul(0.5);
+                        }
+                    }
+                    objA.posChange.increase(objAPosChange);
+                    objB.posChange.increase(objBPosChange);
+                    Vec contact = findContactPoints(objA, objB, objA.pos.add(objAPosChange), objB.pos.add(objBPosChange));
+
+                    //return null;
+                    if (contact != null) {
+                        CollisionStore impulseResult = applyImpulse(objA, objB, MTV, contact, objA.pos, objB.pos);
+                        if (impulseResult != null) {
+                        }
+                        return impulseResult;
+                    }
+                } else {
+                    objA.boundingBox.boxColor = new Color(100, 0, 255, 255);
+                    objB.boundingBox.boxColor = new Color(100, 0, 255, 255);
+                }
+            }
+        }
+        return null;
+    }*/
 
     private static Vec clampMTVToOverlap(Object.BoundingBox bbA, Object.BoundingBox bbB, Vec mtv) {
         if (!isFiniteVec(mtv)) {
@@ -162,7 +267,7 @@ public class ObjectHandler {
         return dir.mul(maxReasonableMtv);
     }
 
-    private static boolean polygonBoundingBoxCollision(Object.BoundingBox bbA, Object.BoundingBox bbB) {
+    private static boolean boundingBoxCollision(Object.BoundingBox bbA, Object.BoundingBox bbB) {
         if (bbA.xMax < bbB.xMin || bbA.xMin > bbB.xMax) {
             bbA.boxColor = new Color(255, 140, 90, 255);
             bbB.boxColor = new Color(255, 140, 90, 255);
@@ -182,27 +287,44 @@ public class ObjectHandler {
         if (Options.GJK.genAndDisplayAllOutsidePoints) {generateAndDisplayAllOutsidePoints(objA, objB);}
         if (Options.GJK.debug) {IO.println("");}
         if (Options.GJK.debug) {IO.println("New GJK Collision Check");}
+        simplexList.clear();
         simplexList.add(null);
         simplexList.add(null);
         simplexList.add(null);
         Vec direction = Vec.sub(objB.pos, objA.pos);
+        if (Vec.dot(direction, direction) <= EPAPointEpsilon) {
+            direction = new Vec(1, 0);
+        }
         checkGJKPoint(objA, objB, direction, simplexList, 0, "no return", 0.0);
+        if (!isFiniteVec(simplexList.get(0)) || Vec.dot(simplexList.get(0), direction) <= 0) {
+            if (Options.GJK.debug) {IO.println("failed on first point");}
+            return false;
+        }
         if (!checkGJKPoint(objA, objB, simplexList.get(0).mul(-1), simplexList, 1, "insert second check style here", 0.0)) {
             if (Options.GJK.debug) {IO.println("failed on second point");}
             return false;
         }
         // Calculate perpendicular direction towards origin
         Vec perpDir = Vec.dirOfPerpendicularBisector(simplexList.get(0), simplexList.get(1));
-        /*// Check if the perpendicular points towards the origin, if not, flip it
+        if (perpDir == null) {
+            return false;
+        }
+        // Check if the perpendicular points towards the origin, if not, flip it
         Vec midpoint = new Vec((simplexList.get(0).x + simplexList.get(1).x) / 2, (simplexList.get(0).y + simplexList.get(1).y) / 2);
         Vec toOrigin = new Vec(-midpoint.x, -midpoint.y);
         if (Vec.dot(perpDir, toOrigin) < 0) {
-            // Flip the direction
+            // flip direction
             perpDir = Vec.dirOfPerpendicularBisector(simplexList.get(0), simplexList.get(1), true);
-        }*/
+        }
         if (!checkGJKPoint(objA, objB, perpDir, simplexList, 2, "insert third check style here", 0.0)) {
             IO.println("failed on third point");
             return false; //the original had the simplexes reversed and then negated it, so i just changed the order of subtraction here - ok this may still be backwards
+        }
+
+        if (!TaterMath.isClockwise(simplexList)) {
+            Vec temp = simplexList.get(1);
+            simplexList.set(1, simplexList.get(2));
+            simplexList.set(2, temp);
         }
 
         boolean check1Passed;
@@ -243,6 +365,9 @@ public class ObjectHandler {
                 }
             }
             if (check1Passed && check2Passed && check3Passed) {
+                if (!originInsideTriangle(simplexList.get(0), simplexList.get(1), simplexList.get(2))) {
+                    continue;
+                }
                 if (Options.GJK.debug) {IO.println("Successful collision detected");}
                 if (Options.GJK.render.drawSuccessfulSimplex) {
                     DrawSimplex(simplexList, Options.GJK.render.successfulSimplexColor, 2.5f);
@@ -362,23 +487,45 @@ public class ObjectHandler {
         return Math.abs(a.x - b.x) <= EPAPointEpsilon && Math.abs(a.y - b.y) <= EPAPointEpsilon;
     }
 
+    private static Vec safeNormalize(Vec v) {
+        double len = v.len();
+        if (!Double.isFinite(len) || len <= EPAPointEpsilon) {
+            return null;
+        }
+        return v.div(len);
+    }
+
+    /// checks to make sure it's a real number or whatever
     private static boolean isFiniteVec(Vec v) {
         return v != null && Double.isFinite(v.x) && Double.isFinite(v.y);
     }
 
+    private static boolean originInsideTriangle(Vec a, Vec b, Vec c) {
+        double ab = Vec.cross(b.sub(a), a.mul(-1));
+        double bc = Vec.cross(c.sub(b), b.mul(-1));
+        double ca = Vec.cross(a.sub(c), c.mul(-1));
+        boolean hasNeg = (ab < -EPAPointEpsilon) || (bc < -EPAPointEpsilon) || (ca < -EPAPointEpsilon);
+        boolean hasPos = (ab > EPAPointEpsilon) || (bc > EPAPointEpsilon) || (ca > EPAPointEpsilon);
+        return !(hasNeg && hasPos);
+    }
+
     private static boolean checkGJKPoint(Object objA, Object objB, Vec direction, ArrayList<Vec> simplexList, int pointIndex, String pointCheckStyle, double dirVecLen) {
-        simplexList.set(pointIndex, findGJKPoint(objA, objB, direction)); //since the list is already initialized with nulls, we can just replace existing points
+        if (direction == null) {return false;}
+        Vec support = findGJKPoint(objA, objB, direction);
+        if (!isFiniteVec(support)) {
+            return false;
+        }
+        simplexList.set(pointIndex, support); //since the list is already initialized with nulls, we can just replace existing points
         if (Options.GJK.render.drawNewPoint) { Stage.drawn.addCenteredPoint(new Vec.coloredVec(simplexList.get(pointIndex), new Color(2, 237, 2, 255))); }
+        double dotProduct = Vec.dot(simplexList.get(pointIndex), direction);
+        if (!Double.isFinite(dotProduct) || dotProduct <= 0) {
+            return false;
+        }
         if (pointCheckStyle.equals("insert second check style here")) {
             double normDistBetweenPointsAndOrigin = Vec.normDist(new Vec(0,0), simplexList.get(0), simplexList.get(1), true);
             return normDistBetweenPointsAndOrigin != 0 && normDistBetweenPointsAndOrigin != 1;
         } else if (pointCheckStyle.equals("insert third check style here")) {
-            // verify that the support point in search direction actually passes the origin
-            // if dot(newPoint, searchDirection) <= 0, the shapes don't intersect
-            double dotProduct = Vec.dot(simplexList.get(pointIndex), direction);
-            //IO.println("New Third Check:" + (dotProduct > 0) + "       Old Third Check:" + (Vec.isPointRightOfLine(new Vec(0,0), simplexList.get((1+pointIndex)%3), simplexList.get((2+pointIndex)%3), false)));
-            return (dotProduct > 0);
-            //return Vec.isPointRightOfLine(new Vec(0,0), simplexList.get((1+pointIndex)%3), simplexList.get((2+pointIndex)%3), false); //uses the pointIndex to determine which two points to use for the line
+            return true;
         } else if (pointCheckStyle.equals("insert fourth check style here")) {
             return 0.1 < Math.abs(dirVecLen - Vec.distInDir(simplexList.get(pointIndex), direction));
         }
@@ -397,125 +544,186 @@ public class ObjectHandler {
         highestMagAlongDir = -Double.MAX_VALUE;
         highestIndex = -1;
         index = 0;
-        for (Vec vec : objA.rel) {
-            index++;
-            //currentMag = Vec.dot(vec, direction);
-            currentMag = Vec.dot(vec, direction.mul(-1));
-            if (currentMag > highestMagAlongDir) {
-                highestMagAlongDir = currentMag;
-                highestIndex = index - 1;
+        Vec pointA = null;
+        if (objA.type.equals("polygon")) {
+            for (Vec vec : objA.rel) {
+                index++;
+                //currentMag = Vec.dot(vec, direction);
+                currentMag = Vec.dot(vec, direction.mul(-1));
+                if (currentMag > highestMagAlongDir) {
+                    highestMagAlongDir = currentMag;
+                    highestIndex = index - 1;
+                }
             }
+            pointA = objA.rel[highestIndex].add(objA.pos);
+        } else if (objA.type.equals("circle")) {
+            Vec dirNormalized = safeNormalize(direction.mul(-1));
+            if (!isFiniteVec(dirNormalized)) {
+                return null;
+            }
+            pointA = objA.pos.add(dirNormalized.mul(objA.radius));
         }
-        Vec pointA = objA.rel[highestIndex].add(objA.pos);
         //}
         highestMagAlongDir = -Double.MAX_VALUE;
         highestIndex = -1;
         index = 0;
-        for (Vec vec : objB.rel) { //check
-            index++;
-            currentMag = Vec.dot(vec, direction);
-            if (currentMag > highestMagAlongDir) {
-                highestMagAlongDir = currentMag;
-                highestIndex = index - 1;
+        Vec pointB = null;
+        if (objB.type.equals("polygon")) {
+            for (Vec vec : objB.rel) { //check
+                index++;
+                currentMag = Vec.dot(vec, direction);
+                if (currentMag > highestMagAlongDir) {
+                    highestMagAlongDir = currentMag;
+                    highestIndex = index - 1;
+                }
             }
+            pointB = objB.rel[highestIndex].add(objB.pos);
+        } else if (objB.type.equals("circle")) {
+            Vec dirNormalized = safeNormalize(direction);
+            if (!isFiniteVec(dirNormalized)) {
+                return null;
+            }
+            pointB = objB.pos.add(dirNormalized.mul(objB.radius));
         }
-        Vec pointB = objB.rel[highestIndex].add(objB.pos);
         if (Options.GJK.debug) {IO.println("DIRECTION: " + direction + "     New Vec: " + Vec.sub(pointB, pointA));}
         return(Vec.sub(pointB, pointA)); //since the list is already initialized with nulls, we can just replace existing points
     }
 
     private static Vec findContactPoints(Object objA, Object objB, Vec objAPos, Vec objBPos) {
         double tolerance = 0.6;
-        int minDistPointIndex1 = 0;
-        int minDistPointIndex2 = 0;
-        int minDistLineIndex1 = 0;
-        int minDistLineIndex2;
-        int shapeIndex1 = 0;
-        int shapeIndex2 = 0;
+        int minDistPointIndex1 = -1;
+        int minDistPointIndex2 = -1;
+        int minDistLineIndex1 = -1;
+        int minDistLineIndex2 = -1;
+        int shapeIndex1 = -1;
+        int shapeIndex2 = -1;
 
-        double contactBuild;
+        double contactDist;
         double tempMinDist = Double.MAX_VALUE;
-        double tempNormDist;
+        double contactNormDist = 0;
+
+        Vec contact = null;
+        Vec contact1 = null;
+        Vec contact2 = null;
         if (Options.ContactPoints.debug) {
             IO.println("");
             IO.println("");
             IO.println("Contact Points round 1:");
         }
-        for  (int i = 0; i < objB.rel.length; i++) {
-            for (int j = 0; j < objA.rel.length; j++) {
-                tempNormDist = Vec.normDist(objA.rel[j].add(objAPos), objB.rel[i].add(objBPos), objB.rel[(i+1)%objB.rel.length].add(objBPos),true);
-                contactBuild = Vec.distToNormDistPoint(objA.rel[j].add(objAPos), objB.rel[i].add(objBPos), objB.rel[(i+1)%objB.rel.length].add(objBPos), true, tempNormDist);
+        if (objA.type.equals("polygon") && objB.type.equals("polygon")) {
+            for  (int i = 0; i < objB.rel.length; i++) {
+                for (int j = 0; j < objA.rel.length; j++) {
+                    contactNormDist = Vec.normDist(objA.rel[j].add(objAPos), objB.rel[i].add(objBPos), objB.rel[(i+1)%objB.rel.length].add(objBPos),true);
+                    contactDist = Vec.distToNormDistPoint(objA.rel[j].add(objAPos), objB.rel[i].add(objBPos), objB.rel[(i+1)%objB.rel.length].add(objBPos), true, contactNormDist);
 
-                if ((contactBuild + tolerance) < tempMinDist) {
-                    minDistPointIndex2 = -1;
-                    shapeIndex2 = -1;
-                    minDistPointIndex1 = j;
+                    if ((contactDist + tolerance) < tempMinDist) {
+                        minDistPointIndex2 = -1;
+                        shapeIndex2 = -1;
+                        minDistPointIndex1 = j;
+                        minDistLineIndex1 = i;
+                        shapeIndex1 = 2;
+                        tempMinDist = contactDist;
+                        if (Options.ContactPoints.debug) { IO.println("New min 1 found:      MinPointIndex " + minDistPointIndex1 + "   MinLineIndex " + minDistLineIndex1 + "   MinDist " + tempMinDist); }
+                    } else if ((contactDist - tolerance) < tempMinDist && minDistPointIndex1 != j && minDistPointIndex2 != j) {
+                        minDistPointIndex2 = j;
+                        minDistLineIndex2 = i;
+                        shapeIndex2 = 2;
+                        if (Options.ContactPoints.debug) { IO.println("New min 2 found:      MinPointIndex " + minDistPointIndex2 + "   MinLineIndex " + minDistLineIndex2 + "   MinDist " + tempMinDist); }
+                    }
+                }
+            }
+            if (Options.ContactPoints.debug) { IO.println(""); }
+            if (Options.ContactPoints.debug) { IO.println("Contact Points round 2:"); }
+            for  (int i = 0; i < objA.rel.length; i++) {
+                for (int j = 0; j < objB.rel.length; j++) {
+                    contactNormDist = Vec.normDist(objB.rel[j].add(objBPos), objA.rel[i].add(objAPos), objA.rel[(i+1)%objA.rel.length].add(objAPos),true);
+                    contactDist = Vec.distToNormDistPoint(objB.rel[j].add(objBPos), objA.rel[i].add(objAPos), objA.rel[(i+1)%objA.rel.length].add(objAPos), true, contactNormDist);
+
+                    if ((contactDist + tolerance) < tempMinDist) {
+                        minDistPointIndex2 = -1;
+                        shapeIndex2 = -1;
+                        minDistPointIndex1 = j;
+                        minDistLineIndex1 = i;
+                        shapeIndex1 = 1;
+                        tempMinDist = contactDist;
+                        if (Options.ContactPoints.debug) { IO.println("New min 1 found:      MinPointIndex " + minDistPointIndex1 + "   MinLineIndex " + minDistLineIndex1 + "   MinDist " + tempMinDist); }
+                    } else if ((contactDist - tolerance) < tempMinDist && minDistPointIndex1 != j && minDistPointIndex2 != j) {
+                        minDistPointIndex2 = j;
+                        minDistLineIndex2 = i;
+                        shapeIndex2 = 1;
+                        if (Options.ContactPoints.debug) { IO.println("New min 2 found:      MinPointIndex " + minDistPointIndex2 + "   MinLineIndex " + minDistLineIndex2 + "   MinDist " + tempMinDist); }
+                    }
+                }
+            }
+        } else if (objA.type.equals("circle") && objB.type.equals("polygon")) {
+            double minContactNormDist = 0.0;
+            for  (int i = 0; i < objB.rel.length; i++) {
+                contactNormDist = Vec.normDist(objAPos, objB.rel[i].add(objBPos), objB.rel[(i+1)%objB.rel.length].add(objBPos),true);
+                contactDist = Vec.distToNormDistPoint(objAPos, objB.rel[i].add(objBPos), objB.rel[(i+1)%objB.rel.length].add(objBPos), true, contactNormDist);
+
+                if ((contactDist + tolerance) < tempMinDist) {
                     minDistLineIndex1 = i;
                     shapeIndex1 = 2;
-                    tempMinDist = contactBuild;
-                    if (Options.ContactPoints.debug) { IO.println("New min 1 found:      MinPointIndex " + minDistPointIndex1 + "   MinLineIndex " + minDistLineIndex1 + "   MinDist " + tempMinDist); }
-                } else if ((contactBuild - tolerance) < tempMinDist && minDistPointIndex1 != j && minDistPointIndex2 != j) {
-                    minDistPointIndex2 = j;
-                    minDistLineIndex2 = i;
-                    shapeIndex2 = 2;
-                    if (Options.ContactPoints.debug) { IO.println("New min 2 found:      MinPointIndex " + minDistPointIndex2 + "   MinLineIndex " + minDistLineIndex2 + "   MinDist " + tempMinDist); }
+                    minContactNormDist = contactNormDist;
+                    //finds furthest point on circle in directrion of
+                    tempMinDist = contactDist;
+                    if (Options.ContactPoints.debug) { IO.println("New min found:      MinPointIndex " + minDistPointIndex1 + "   MinLineIndex " + minDistLineIndex1 + "   MinDist " + tempMinDist); }
                 }
             }
+            contact = Vec.normDistPoint(objAPos, objB.rel[minDistLineIndex1].add(objBPos), objB.rel[(minDistLineIndex1+1)%objB.rel.length].add(objBPos), true, minContactNormDist);
+            IO.println(contact.toString());
+            IO.println("Contact Points Circle 1");
+        } else if (objA.type.equals("polygon") && objB.type.equals("circle")) {
+            double minContactNormDist = 0.0;
+            for  (int i = 0; i < objA.rel.length; i++) {
+                contactNormDist = Vec.normDist(objBPos, objA.rel[i].add(objAPos), objA.rel[(i+1)%objA.rel.length].add(objAPos),true);
+                contactDist = Vec.distToNormDistPoint(objBPos, objA.rel[i].add(objAPos), objA.rel[(i+1)%objA.rel.length].add(objAPos), true, contactNormDist);
 
-        }
-        if (Options.ContactPoints.debug) { IO.println(""); }
-        if (Options.ContactPoints.debug) { IO.println("Contact Points round 2:"); }
-        for  (int i = 0; i < objA.rel.length; i++) {
-            for (int j = 0; j < objB.rel.length; j++) {
-                tempNormDist = Vec.normDist(objB.rel[j].add(objBPos), objA.rel[i].add(objAPos), objA.rel[(i+1)%objA.rel.length].add(objAPos),true);
-                contactBuild = Vec.distToNormDistPoint(objB.rel[j].add(objBPos), objA.rel[i].add(objAPos), objA.rel[(i+1)%objA.rel.length].add(objAPos), true, tempNormDist);
-
-                if ((contactBuild + tolerance) < tempMinDist) {
-                    minDistPointIndex2 = -1;
-                    shapeIndex2 = -1;
-                    minDistPointIndex1 = j;
+                if ((contactDist + tolerance) < tempMinDist) {
                     minDistLineIndex1 = i;
                     shapeIndex1 = 1;
-                    tempMinDist = contactBuild;
-                    if (Options.ContactPoints.debug) { IO.println("New min 1 found:      MinPointIndex " + minDistPointIndex1 + "   MinLineIndex " + minDistLineIndex1 + "   MinDist " + tempMinDist); }
-                } else if ((contactBuild - tolerance) < tempMinDist && minDistPointIndex1 != j && minDistPointIndex2 != j) {
-                    minDistPointIndex2 = j;
-                    minDistLineIndex2 = i;
-                    shapeIndex2 = 1;
-                    if (Options.ContactPoints.debug) { IO.println("New min 2 found:      MinPointIndex " + minDistPointIndex2 + "   MinLineIndex " + minDistLineIndex2 + "   MinDist " + tempMinDist); }
+                    minContactNormDist = contactNormDist;
+                    tempMinDist = contactDist;
+                    if (Options.ContactPoints.debug) { IO.println("New min found:      MinPointIndex " + minDistPointIndex1 + "   MinLineIndex " + minDistLineIndex1 + "   MinDist " + tempMinDist); }
                 }
+            }
+            contact = Vec.normDistPoint(objBPos, objA.rel[minDistLineIndex1].add(objAPos), objA.rel[(minDistLineIndex1+1)%objA.rel.length].add(objAPos), true, minContactNormDist);
 
+            if (Options.ContactPoints.debug) {
+                IO.println(contact.toString());
+                IO.println("Contact Points Circle 2");
             }
         }
-        Vec contact;
-        Vec contact1;
-        Vec contact2 = null;
         if (Options.ContactPoints.debug) {
             IO.println("");
-            IO.println("Shape A index: " + objA.index + "   Shape A length: " + objA.rel.length + "   Shape B index: " + objB.index + "   Shape B length: " + objB.rel.length);
+            IO.println("Shape A index: " + objA.index + "   Shape B index: " + objB.index);
             IO.println("MinDistPointIndex1: " + minDistPointIndex1 + "   ShapeIndex1: " + shapeIndex1 + "   MinDistPointIndex2: " + minDistPointIndex2 + "   ShapeIndex2: " + shapeIndex2);
         }
-        if (shapeIndex1 == 1) {
-            contact1 = objB.rel[minDistPointIndex1].add(objBPos);
-        } else if (shapeIndex1 == 2) {
-            contact1 = objA.rel[minDistPointIndex1].add(objAPos);
-        } else {
-            if (Options.ContactPoints.debug) { IO.println("ERROR: No contact point found"); }
-            return null;
+
+        if (objA.type.equals("polygon") && objB.type.equals("polygon")) {
+            if (shapeIndex1 == 1) {
+                contact1 = objB.rel[minDistPointIndex1].add(objBPos);
+            } else if (shapeIndex1 == 2) {
+                contact1 = objA.rel[minDistPointIndex1].add(objAPos);
+            } else {
+                if (Options.ContactPoints.debug) { IO.println("ERROR: No contact point found"); }
+                return null;
+            }
+            if (shapeIndex2 == 1) {
+                contact2 = objB.rel[minDistPointIndex2].add(objBPos);
+            } else if (shapeIndex2 == 2) {
+                contact2 = objA.rel[minDistPointIndex2].add(objAPos);
+            }
+            if (shapeIndex2 == -1) {
+                contact = contact1;
+            } else {
+                contact = Vec.div(contact1.add(contact2),2);
+            }
         }
-        if (shapeIndex2 == 1) {
-            contact2 = objB.rel[minDistPointIndex2].add(objBPos);
-        } else if (shapeIndex2 == 2) {
-            contact2 = objA.rel[minDistPointIndex2].add(objAPos);
-        }
-        if (shapeIndex2 == -1) {
-            contact = contact1;
-        } else {
-            contact = Vec.div(contact1.add(contact2),2);
-        }
-        if (Options.ContactPoints.render.drawDoubleContactPoints) { Stage.drawn.points.add(new Vec.coloredVec(contact1, new Color(20, 66, 6, 255))); }
+        if (Options.ContactPoints.debug) { IO.println("Shape A Type: " + objA.type + "   Shape B Type: " + objB.type); }
         if  (shapeIndex2 != -1) {
-            if (Options.ContactPoints.render.drawDoubleContactPoints) { Stage.drawn.points.add(new Vec.coloredVec(contact2, new Color(20, 66, 6, 255))); }
+            if (Options.ContactPoints.render.drawDoubleContactPoints && contact1 != null) { Stage.drawn.points.add(new Vec.coloredVec(contact1, new Color(20, 66, 6, 255))); }
+            if (Options.ContactPoints.render.drawDoubleContactPoints && contact2 != null) { Stage.drawn.points.add(new Vec.coloredVec(contact2, new Color(20, 66, 6, 255))); }
         }
         if (Options.ContactPoints.render.drawMainContactPoint) { Stage.drawn.points.add(new Vec.coloredVec(contact, new Color(61, 255, 0, 255))); }
         return contact;
@@ -541,10 +749,20 @@ public class ObjectHandler {
         }
         double j = (-(1 + (objA.restitution * objB.restitution)) * relVelDotN) / denominator;
         Vec impulse = normal.mul(j);
-        objA.velChange = objA.velChange.sub(impulse.mul(objA.inverseMass));
-        objA.angularVelChange -= objA.inverseInertia * Vec.cross(ra, impulse);
-        objB.velChange = objB.velChange.add(impulse.mul(objB.inverseMass));
-        objB.angularVelChange += objB.inverseInertia * Vec.cross(rb, impulse);
+        //if (objA.staticObj) {
+        //    objB.velChange = objB.velChange.add(impulse.mul(objB.inverseMass).mul(2));
+        //    objB.angularVelChange += objB.inverseInertia * Vec.cross(rb, impulse) * 2;
+        //} else if (objB.staticObj) {
+        //    objA.velChange = objA.velChange.sub(impulse.mul(objA.inverseMass).mul(2));
+        //    objA.angularVelChange -= objA.inverseInertia * Vec.cross(ra, impulse) * 2;
+        //} else {
+        //Stage.drawn.addCenteredLine(new Vec.coloredLine(new Vec(0,0), MTV.normalize().mul(60), new Color(255, 0, 255, 255), 3));
+            objA.velChange = objA.velChange.sub(impulse.mul(objA.inverseMass));
+            objA.angularVelChange -= objA.inverseInertia * Vec.cross(ra, impulse);
+            objB.velChange = objB.velChange.add(impulse.mul(objB.inverseMass));
+            objB.angularVelChange += objB.inverseInertia * Vec.cross(rb, impulse);
+        //IO.println("Shape A inverse mass: " + objA.inverseMass + "   Shape B inverse mass: " + objB.inverseMass);
+        //}
         return new CollisionStore(objA, objB, normal, r, j, relVel, raPerp, rbPerp, objAPos, objBPos); //Missing the static seperators or whatever
     }
 
@@ -554,8 +772,8 @@ public class ObjectHandler {
             return;
         }
         tangent = tangent.normalize();
-        double staticFriction = objA.friction * objB.friction;
-        double kineticFriction = objA.friction * objB.friction * 0.8;
+        double kineticFriction = objA.kineticFriction * objB.kineticFriction;
+        double staticFriction = objA.staticFriction * objB.staticFriction;
 
         double raPerpDotN = Vec.dot(raPerp, tangent);
         double rbPerpDotN = Vec.dot(rbPerp, tangent);
@@ -574,9 +792,7 @@ public class ObjectHandler {
         objA.angularVelChange -= objA.inverseInertia * Vec.cross(contact.sub(objAPos), impulse);
         objB.velChange = objB.velChange.add(impulse.mul(objB.inverseMass));
         objB.angularVelChange += objB.inverseInertia * Vec.cross(contact.sub(objBPos), impulse);
-
     }
-
     private static void DrawSimplex(ArrayList<Vec> simplexList, Color color, float width) {
         for (int i = 0; i < simplexList.size(); i++) {
             if (simplexList.get(i) != null) {

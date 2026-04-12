@@ -1,6 +1,6 @@
 import java.awt.*;
 
-public class Object {
+public class Object implements Cloneable {
     Vec pos = new Vec(); //position of center of mass
 
     public int index;
@@ -11,7 +11,8 @@ public class Object {
 
     public boolean collidable;
     public boolean active;
-    public boolean staticObj;
+    public boolean linearStatic;
+    public boolean angularStatic;
     public boolean outlined;
 
     public Vec[] rel;
@@ -19,11 +20,14 @@ public class Object {
     public Vec[] bindRel;
     private Vec[] setBindRel;
 
+    public double radius; //for circles only
+
     public BoundingBox boundingBox;
 
     public double area;
     public double density;
-    public double friction;
+    public double kineticFriction;
+    public double staticFriction;
     public double restitution;
 
     public Vec setAcceleration;
@@ -41,9 +45,11 @@ public class Object {
     public double mass;
     public double inverseMass;
 
+    static double oldRotation;
 
-    public Object(Color color, double x, double y, double rotation, Vec[] points, int index, Vec setAcceleration) { //polygon shape
-        //make sure all shapes are clockwise for now
+    /// polygon constructor
+    public Object(Color color, double x, double y, double rotation, Vec[] points, int index, Vec setAcceleration, boolean linearStatic, boolean angularStatic) { //polygon shape
+        //make sure all shapes are counter-clockwise for now
         this.pos = new Vec(x, y);
         this.vel = new Vec(0.0, 0.0);
         this.rotation = rotation;
@@ -59,43 +65,132 @@ public class Object {
         this.velChange = new Vec(0.0, 0.0);
         this.angularVelChange = 0.0;
         this.posChange = new Vec(0.0, 0.0);
-        this.friction = 0.7;
+        this.kineticFriction = 0.7;
+        this.staticFriction = 0.85;
         this.setAcceleration = setAcceleration;
+        this.linearStatic = linearStatic;
+        this.angularStatic = angularStatic;
 
-        PropertiesCalc(this.setRel, 1.0, this.density);
-        if (this.mass != 0) {
-            this.inverseMass = 1.0 / this.mass;
-        } else {
-            this.inverseMass = 0.0;
+        if (!linearStatic || !angularStatic) {
+            polygonPropertiesCalc(this.setRel, 1.0, this.density);
         }
-        if (this.inertia != 0) {
-            this.inverseInertia = 1.0 / this.inertia;
+        if (this.linearStatic) {
+            this.mass = Double.POSITIVE_INFINITY;
+            this.inverseMass = 0;
         } else {
-            this.inverseInertia = 0.0;
+            if (this.mass != 0) {
+                this.inverseMass = 1.0 / this.mass;
+            } else {
+                this.inverseMass = 0.0;
+            }
+        }
+        if  (this.angularStatic) {
+            this.inertia = Double.POSITIVE_INFINITY;
+            this.inverseInertia = 0;
+        } else {
+            if (this.inertia != 0) {
+                this.inverseInertia = 1.0 / this.inertia;
+            } else {
+                this.inverseInertia = 0.0;
+            }
+        }
+        if (Options.Object.logCreation) {
+            IO.println("mass: " + this.mass + ", inertia: " + this.inertia);
+            IO.println("inverse mass: " + this.inverseMass + ", inverse inertia: " + this.inverseInertia);
+            IO.println("area: " + this.area);
         }
     }
 
-    public Object(Color color, double x, double y, double rotation, double width, double height, int index, Vec setAcceleration) { //rectangle
-        this(color, x, y, rotation, new Vec[] {
-            new Vec(width / 2, height / 2),
-            new Vec(width / 2, height / -2),
-            new Vec(width / -2, height / -2),
-            new Vec(width / -2, height / 2)}
-        , index, setAcceleration);
-        //this.pos.x = x;
-        //this.pos.y = y;
-    }/* else if (type.equals("circle")) {
-        this.pos.x = x;
-        this.pos.y = y;
+    /// circle constructor
+    public Object(Color color, double x, double y, double rotation, double radius, int index, Vec setAcceleration, boolean linearStatic, boolean angularStatic) { //polygon shape
+        //make sure all shapes are counter-clockwise for now
+        this.pos = new Vec(x, y);
+        this.vel = new Vec(0.0, 0.0);
         this.rotation = rotation;
+        this.angularVel = 0;
+        this.type = "circle";
         this.color = color;
-        this.density = 1.0; */
+        this.density = 1.0;
+        this.outlined = false;
+        this.index = index;
+        this.radius = radius;
+        this.boundingBox = new BoundingBox();
+        this.velChange = new Vec(0.0, 0.0);
+        this.angularVelChange = 0.0;
+        this.posChange = new Vec(0.0, 0.0);
+        this.kineticFriction = 0.7;
+        this.staticFriction = 0.85;
+        this.setAcceleration = setAcceleration;
+        this.linearStatic = linearStatic;
+        this.angularStatic = angularStatic;
+
+        this.area = radius * radius * Math.PI;
+
+        if (this.linearStatic) {
+            this.mass = Double.POSITIVE_INFINITY;
+            this.inverseMass = 0;
+        } else {
+            this.mass = this.area * this.density;
+            if (this.mass != 0) {
+                this.inverseMass = 1.0 / this.mass;
+            } else {
+                this.inverseMass = 0.0;
+            }
+        }
+        if  (this.angularStatic) {
+            this.inertia = Double.POSITIVE_INFINITY;
+            this.inverseInertia = 0;
+        } else {
+            this.inertia = this.mass * radius * radius / 2;
+            if (this.inertia != 0) {
+                this.inverseInertia = 1.0 / this.inertia;
+            } else {
+                this.inverseInertia = 0.0;
+            }
+        }
+        if (Options.Object.logCreation) {
+            IO.println("mass: " + this.mass + ", inertia: " + this.inertia);
+            IO.println("inverse mass: " + this.inverseMass + ", inverse inertia: " + this.inverseInertia);
+        }
+    }
+
+    public static Object createRectangle(Color color, double x, double y, double rotation, double width, double height, int index, Vec setAcceleration, boolean linearStatic, boolean angularStatic) {//rectangle
+        return new Object(color, x, y, rotation, new Vec[] {
+                        new Vec(width / 2, height / 2),
+                        new Vec(width / 2, height / -2),
+                        new Vec(width / -2, height / -2),
+                        new Vec(width / -2, height / 2)}
+                , index, setAcceleration, linearStatic, angularStatic);
+    }
+
+    public static Object createCircle(Color color, double x, double y, double rotation, double radius, int index, Vec setAcceleration, boolean linearStatic, boolean angularStatic) {
+        return new Object(color, x, y, rotation, radius, index, setAcceleration, linearStatic, angularStatic);
+    }
+
+    public static Object createPolygon(Color color, double x, double y, double rotation, double width, double height, int points, int index, Vec setAcceleration, boolean linearStatic,  boolean angularStatic) {
+        return new Object(color, x, y, rotation, generatePolygonPoints(width, height, points), index, setAcceleration, linearStatic, angularStatic);
+    }
+
+    private static Vec[] generatePolygonPoints(double width, double height, int points) {
+        Vec[] polygonPoints = new Vec[points];
+        double angleStep = -2 * Math.PI / points;
+        for (int i = 0; i < points; i++) {
+            double angle = i * angleStep;
+            double x = (width / 2) * Math.cos(angle);
+            double y = (height / 2) * Math.sin(angle);
+            polygonPoints[i] = new Vec(x, y);
+        }
+        return polygonPoints;
+    }
 
     public void updateRelativeCoordinates() {
-        double cosTheta = Math.cos(this.rotation);
-        double sinTheta = Math.sin(this.rotation);
-        for (int i = 0; i < setRel.length; i++) {
-            rel[i] = setRel[i].rotate(this.rotation, cosTheta, sinTheta);
+        if (oldRotation != rotation) {
+            double cosTheta = Math.cos(this.rotation);
+            double sinTheta = Math.sin(this.rotation);
+            for (int i = 0; i < setRel.length; i++) {
+                rel[i] = setRel[i].rotate(cosTheta, sinTheta);
+            }
+            this.oldRotation = this.rotation;
         }
     }
 
@@ -155,7 +250,8 @@ public class Object {
         return minDistIndex;
     }
 
-    private void PropertiesCalc(Vec[] rel, double depth, double density) {
+    /// sets the mass, area, and inertia of shape - not needed for static shapes
+    private void polygonPropertiesCalc(Vec[] rel, double depth, double density) {
         // Accumulate the following values
         double area = 0.0;
         double mass = 0.0;
@@ -187,9 +283,9 @@ public class Object {
         mmoi -= mass * Vec.dot(center, center);
 
         // use area, mass, center and mmoi
-        this.mass = mass;
-        this.area = area;
-        this.inertia = mmoi;
+        this.mass = -mass;
+        this.area = -area;
+        this.inertia = -mmoi;
         for (int i = 0; i < rel.length; i++) {
             rel[i] = Vec.sub(rel[i], center);
         }
@@ -223,7 +319,7 @@ public class Object {
             this.boxColor = new Color(255, 140, 90, 255);
         }
 
-        public void calc(Vec[] rel, Vec pos) {
+        public void polygonCalc(Vec[] rel, Vec pos) {
             // calculate bounding box from rel coordinates
             xMin = rel[0].x;
             xMax = rel[0].x;
@@ -247,6 +343,24 @@ public class Object {
             xMax += pos.x;
             yMin += pos.y;
             yMax += pos.y;
+        }
+
+        public void circleCalc(double radius, Vec pos) {
+            xMin = pos.x - radius;
+            xMax = pos.x + radius;
+            yMin = pos.y - radius;
+            yMax = pos.y + radius;
+        }
+    }
+    
+    @Override
+    public Object clone() {
+        if (this.type == "polygon") {
+            return new Object(this.color, this.pos.x, this.pos.y, this.rotation, Vec.copyArray(this.rel), this.index, this.setAcceleration.copy(), this.linearStatic, this.angularStatic);
+        } else if  (this.type == "circle") {
+            return new Object(this.color, this.pos.x, this.pos.y, this.rotation, this.radius, this.index, this.setAcceleration.copy(), this.linearStatic, this.angularStatic);
+        } else {
+            return null;
         }
     }
 }

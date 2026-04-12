@@ -23,6 +23,7 @@ public class Stage {
 
     public String interactionMode;
     public int interactionStage;
+    private Vec interactionMouseOffset;
 
     public static volatile boolean rememberCanvas;
     public static volatile int iterationNumber;
@@ -87,6 +88,7 @@ public class Stage {
         mouseHoverObjectId = -1;
         interactionStage = 0;
         interactionMode = "none";
+        interactionMouseOffset = new Vec(0, 0);
         //gravity = 1.81;
         //gravity = 0.0;
         paused = false;
@@ -100,6 +102,17 @@ public class Stage {
         frame.add(canvas);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
+        //frame.addComponentListener(new ComponentAdapter() {
+        //    @Override
+        //    public void componentResized(ComponentEvent e) {
+        //        width = canvas.getWidth();
+        //        height = canvas.getHeight();
+        //
+        //        // If you need to update any cached values:
+        //        drawn.SetVarsCauseImDumbAndDontKnowABetterWayToDoThis(width, height);
+        //    }
+        //});
+
 
         drawn.SetVarsCauseImDumbAndDontKnowABetterWayToDoThis(width, height);
 
@@ -107,6 +120,9 @@ public class Stage {
             @Override
             public void mousePressed(MouseEvent e) {
                 // You can check which button was pressed:
+                input.mouse.oldLeft = input.mouse.left;
+                input.mouse.oldRight = input.mouse.right;
+                input.mouse.oldMiddle = input.mouse.middle;
                 if (e.getButton() == MouseEvent.BUTTON1) {
                     input.mouse.left = true;
                 } else if (e.getButton() == MouseEvent.BUTTON2) {
@@ -236,7 +252,9 @@ public class Stage {
         if (!paused) {
             synchronized (OBJECTS_LOCK) {
                 for (Object obj : objects) {
-                    obj.updateRelativeCoordinates();
+                    if (obj.type.equals("polygon")) {
+                        obj.updateRelativeCoordinates();
+                    }
                 }
                 ObjectHandler.collisionCalcs(objects);
             }
@@ -250,6 +268,11 @@ public class Stage {
                 if (obj.posChange.x != 0 || obj.posChange.y != 0) {
                     obj.pos = obj.pos.add(obj.posChange);
                     obj.posChange.set(0, 0);
+                }
+                if (obj.type.equals("polygon")) {
+                    obj.boundingBox.polygonCalc(obj.rel, obj.pos);
+                } else if (obj.type.equals("circle")) {
+                    obj.boundingBox.circleCalc(obj.radius, obj.pos);
                 }
             }
         }
@@ -311,6 +334,9 @@ public class Stage {
                 if (mouseHoverObjectId != -1 && input.mouse.left) {
                     interactionMode = "drag";
                     interactionStage = 1;
+                    interactionMouseOffset = objects.get(mouseHoverObjectId).pos.sub(input.mouse.pos);
+                } else if (!input.mouse.oldLeft && input.mouse.left && TaterMath.isPointInsideBox(input.mouse.pos, new Vec(width - 90, height - 135), new Vec(width - 90 + 72, height - 135 + 92))) {
+                    objects = ObjectHandler.createInitialObjects();
                 }
             } else if (interactionMode.equals("drag")) {
                 if (interactionStage == 1) {
@@ -320,7 +346,8 @@ public class Stage {
                         return;
                     }
                     Object obj = objects.get(mouseHoverObjectId);
-                    if (newFrame) { obj.pos.increase(input.mouse.stepChange); }
+                    //if (newFrame) { obj.pos.increase(input.mouse.stepChange); }
+                    if (newFrame) { obj.pos = input.mouse.pos.add(interactionMouseOffset); }
                     obj.vel = input.mouse.stepChange.div(stepSize); //i don't get why i have to divide by stepsize here but ok
                 }
             }

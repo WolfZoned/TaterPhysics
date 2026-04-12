@@ -55,4 +55,9 @@ public class TaterMath {
             throw new RuntimeException(e);
         }
     }
+
+    public static boolean isPointInsideBox(Vec point, Vec boxCornerA,  Vec boxCornerB) {
+        return !(point.x < Math.min(boxCornerA.x, boxCornerB.x) || point.x > Math.max(boxCornerA.x, boxCornerB.x) ||
+            point.y < Math.min(boxCornerA.y, boxCornerB.y) || point.y > Math.max(boxCornerA.y, boxCornerB.y));
+    }
 }

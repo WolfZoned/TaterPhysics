@@ -136,9 +136,9 @@ public class Vec {
         if (length > 0) {
             return new Vec(result.x / length, result.y / length);
         }
-        IO.println("Warning: Zero-length perpendicular bisector direction vector.");
+        IO.println("Warning: zero length perpendicular bisector direction vector.");
         IO.println(length);
-        return result; // Return to protect against division by zero
+        return null; // Return to protect against division by zero
     }
 
     public static boolean isPointRightOfLine(Vec point, Vec linePointA, Vec linePointB, boolean inclusive) {
@@ -220,10 +220,10 @@ public class Vec {
     public Vec rotate(double ang) {
         double cosTheta = Math.cos(ang);
         double sinTheta = Math.sin(ang);
-        return this.rotate(ang, cosTheta, sinTheta);
+        return this.rotate(cosTheta, sinTheta);
     }
 
-    public Vec rotate(double ang, double cosTheta, double sinTheta) {
+    public Vec rotate(double cosTheta, double sinTheta) {
         return new Vec(this.x * cosTheta - this.y * sinTheta, this.x * sinTheta + this.y * cosTheta);
     }
 

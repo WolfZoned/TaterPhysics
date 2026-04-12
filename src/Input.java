@@ -15,6 +15,9 @@ public class Input {
         public boolean left;
         public boolean right;
         public boolean middle;
+        public boolean oldLeft;
+        public boolean oldRight;
+        public boolean oldMiddle;
         public Vec stepChange;
         public Vec pos;
         public Vec oldPos;
