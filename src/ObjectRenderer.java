@@ -21,13 +21,27 @@ public class ObjectRenderer {
                 renderObject(g2d, obj);
                 g2d.setTransform(originalTransform);
             }
+            for (Object ghost : ScreenElements.GhostObject.ghostObjects) {
+                renderObject(g2d, ghost);
+                g2d.setTransform(originalTransform);
+            }
             for (Object obj : objects) {
                 g2d.setColor(new Color(67, 67, 67, 255));
                 g2d.setStroke(new BasicStroke(1));
                 g2d.drawLine((int) obj.pos.x, (int) obj.pos.y, (int) (obj.pos.x + new Vec(20,20).rotate(obj.rotation).x), (int) (obj.pos.y + new Vec(20,20).rotate(obj.rotation).y));
             }
+            for (Object ghost : ScreenElements.GhostObject.ghostObjects) {
+                g2d.setColor(new Color(0, 0, 0, 255));
+                g2d.setStroke(new BasicStroke(1));
+                g2d.drawLine((int) ghost.pos.x, (int) ghost.pos.y, (int) (ghost.pos.x + new Vec(20,20).rotate(ghost.rotation).x), (int) (ghost.pos.y + new Vec(20,20).rotate(ghost.rotation).y));
+            }
             for (Object obj : objects) {
                 Point2D.Double center = new Point2D.Double(obj.pos.x, obj.pos.y);
+                g2d.setColor(new Color(0, 0, 0, 255));
+                g2d.fill(new Ellipse2D.Double(center.x - 2, center.y - 2, 4, 4));
+            }
+            for (Object ghost : ScreenElements.GhostObject.ghostObjects) {
+                Point2D.Double center = new Point2D.Double(ghost.pos.x, ghost.pos.y);
                 g2d.setColor(new Color(0, 0, 0, 255));
                 g2d.fill(new Ellipse2D.Double(center.x - 2, center.y - 2, 4, 4));
             }

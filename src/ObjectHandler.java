@@ -9,6 +9,10 @@ public class ObjectHandler {
     private static final double EPAMinNormalLenSquared = 1e-12;
     private static final double EPAMaxMTVOverlap = 1.5;
 
+    public static final double inactiveRange = 1000;
+
+    public volatile static int activeShapeCount;
+
     public static class CollisionStore {
         public Object objA;
         public Object objB;
@@ -38,15 +42,27 @@ public class ObjectHandler {
 
     public static ArrayList<Object> createInitialObjects() {
         ArrayList<Object> objects = new ArrayList<>();
-        objects.add(Object.createRectangle(new Color(200, 0, 0), 575, 1200, 0.0, 1100, 1100, objects.size(), new Vec(0, 0), true, false));
+        objects.add(Object.createRectangle(new Color(50, 0, 250), 575, 1200, 0.0, 1100, 1100, objects.size(), new Vec(0, 0), true, false));
         //objects.get(0).angularVel = 0.01;
-        objects.add(Object.createRectangle(new Color(200, 0, 0), 450, 550, 0.0, 30, 30, objects.size(), new Vec(0, 0), false, true));
-        objects.add(Object.createRectangle(new Color(50, 0, 250), 500, 550, 0.0, 30, 30, objects.size(), new Vec(0, 0.3), false, false));
-        objects.add(Object.createPolygon(new Color(0, 250, 221), 400, 550, 0.0, 30, 30, 5, objects.size(), new Vec(0, 0.3), false, false));
-        objects.add(Object.createPolygon(new Color(0, 250, 121), 400, 550, 0.0, 60, 60, 3, objects.size(), new Vec(0, 0.3), false, false));
-        objects.add(Object.createPolygon(new Color(0, 150, 221), 450, 500, 0.0, 60, 60, 8, objects.size(), new Vec(0, 0.3), false, false));
-        objects.add(Object.createCircle(new Color(250, 250, 0), 500, 500, 0.0, 30, objects.size(), new Vec(0, 0.3), false, false));
+        objects.add(Object.createRectangle(Options.colors.ORANGE, 450, 550, 0.0, 30, 30, objects.size(), new Vec(0, 0), false, true));
+        objects.add(Object.createPolygon(Options.colors.CYAN, 400, 550, 0.0, 30, 30, 5, objects.size(), new Vec(0, 0.3), false, false));
+        objects.add(Object.createPolygon(Options.colors.LIGHT_GREEN, 400, 550, 0.0, 60, 60, 3, objects.size(), new Vec(0, 0.3), false, false));
+        objects.add(Object.createPolygon(Options.colors.SKY, 450, 500, 0.0, 60, 60, 8, objects.size(), new Vec(0, 0.3), false, false));
+        objects.add(Object.createCircle(Options.colors.YELLOW, 500, 500, 0.0, 30, objects.size(), new Vec(0, 0.3), false, false));
+        activeShapeCount = objects.size();
         return objects;
+    }
+
+    private static void updateActive(Vec stageSize) {
+        int activeCount = 0;
+        for (Object obj : Stage.objects) {
+            if (obj != null) {
+                if (obj.updateActive(stageSize, inactiveRange)) {
+                    activeCount++;
+                }
+            }
+        }
+        activeShapeCount = activeCount;
     }
 
     public static int mouseHoveredObject(Vec mousePos, ArrayList<Object> objects) {
@@ -69,9 +85,11 @@ public class ObjectHandler {
 
     public static void collisionCalcs(ArrayList<Object> objects) {
 
+        updateActive(new Vec(Stage.drawn.stageWidth, Stage.drawn.stageHeight));
+
         ArrayList<CollisionStore> collisionStorage = new ArrayList<>();
         for (Object obj : objects) {
-            if (obj != null) {
+            if (obj != null && obj.active) {
                 if  (obj.type.equals("polygon")) {
                     obj.boundingBox.polygonCalc(obj.rel, obj.pos);
                 } else if (obj.type.equals("circle")) {
@@ -81,14 +99,14 @@ public class ObjectHandler {
         }
         for (int i = 0; i < objects.size(); i++) {
             Object objA = objects.get(i);
-            if (objA != null) {
+            if (objA != null && objA.active) {
                 for (int j = i + 1; j < objects.size(); j++) {
                     Object objB = objects.get(j);
-                    if (objB != null) {
+                    if (objB != null && objB.active) {
                         if (!objA.linearStatic || !objB.linearStatic || !objA.angularStatic || !objB.angularStatic) {
                             CollisionStore temp = null;
                             if (objA.type.equals("circle") && objB.type.equals("circle")) {
-                                //temp = circleCollision(objA, objB);
+                                temp = circleCollision(objA, objB);
                             } else {
                                 temp = polygonCollision(objA, objB);
                             }
@@ -177,71 +195,47 @@ public class ObjectHandler {
         return null;
     }
 
-    /*private static CollisionStore circleCollision(Object objA, Object objB) {
+    private static CollisionStore circleCollision(Object objA, Object objB) {
         synchronized (Stage.DRAWN_LOCK) {
-            if (GJKCollision(objA, objB, simplexList)) {
-                Vec MTV = EPACollision(objA, objB, simplexList);
-                if (MTV != null) {
-                    MTV = clampMTVToOverlap(objA.boundingBox, objB.boundingBox, MTV);
-                    if (MTV == null) {
-                        objA.boundingBox.boxColor = new Color(100, 0, 255, 255);
-                        objB.boundingBox.boxColor = new Color(100, 0, 255, 255);
-                        return null;
-                    }
-                    // make sure MTV points from A to B for consistent correction/impulse direction
-                    Vec centerDelta = objB.pos.sub(objA.pos);
-                    if (Vec.dot(MTV, centerDelta) < 0) {
-                        MTV = MTV.mul(-1);
-                    }
-                    objA.boundingBox.boxColor = new Color(72, 255, 0, 255);
-                    objB.boundingBox.boxColor = new Color(72, 255, 0, 255);
-                    //Stage.drawn.addCenteredLine(new Vec.coloredLine(new Vec(0, 0), MTV.normalize().mul(60), new Color(255, 0, 255, 255), 3));
-                    //objA.pos = objA.pos.add(MTV.mul(-0.5));
-                    //objB.pos = objB.pos.add(MTV.mul(0.5));
-                    //IO.println(MTV);
-                    //return null;
-                    //IO.println("Collision detected with MTV: " + MTV.x + ", " + MTV.y);
-                    Vec objAPosChange;// = MTV.mul(-0.5);
-                    Vec objBPosChange;// = MTV.mul(0.5);
-                    if (objA.linearStatic && !objB.linearStatic) {
-                        objAPosChange = new Vec();
-                        objBPosChange = MTV;
-                    } else if (!objA.linearStatic && objB.linearStatic) {
-                        objAPosChange = MTV.mul(-1);
-                        objBPosChange = new Vec();
-                    } else {
-                        // Apply position correction proportionally to inverse mass (mass-weighted)
-                        double totalInverseMass = objA.inverseMass + objB.inverseMass;
-                        if (totalInverseMass > 0) {
-                            double ratioA = objA.inverseMass / totalInverseMass;
-                            double ratioB = objB.inverseMass / totalInverseMass;
-                            objAPosChange = MTV.mul(-ratioA);
-                            objBPosChange = MTV.mul(ratioB);
-                        } else {
-                            // just in case both are static
-                            objAPosChange = MTV.mul(-0.5);
-                            objBPosChange = MTV.mul(0.5);
-                        }
-                    }
-                    objA.posChange.increase(objAPosChange);
-                    objB.posChange.increase(objBPosChange);
-                    Vec contact = findContactPoints(objA, objB, objA.pos.add(objAPosChange), objB.pos.add(objBPosChange));
-
-                    //return null;
-                    if (contact != null) {
-                        CollisionStore impulseResult = applyImpulse(objA, objB, MTV, contact, objA.pos, objB.pos);
-                        if (impulseResult != null) {
-                        }
-                        return impulseResult;
-                    }
+            Vec circleOffset = new Vec(objB.pos.x - objA.pos.x, objB.pos.y - objA.pos.y);
+            double circleOverlap = objA.radius + objB.radius - circleOffset.len();
+            if (circleOverlap > 0) {
+                Vec MTV = circleOffset.normalize().mul(circleOverlap);
+                Vec objAPosChange;// = MTV.mul(-0.5);
+                Vec objBPosChange;// = MTV.mul(0.5);
+                if (objA.linearStatic && !objB.linearStatic) {
+                    objAPosChange = new Vec();
+                    objBPosChange = MTV;
+                } else if (!objA.linearStatic && objB.linearStatic) {
+                    objAPosChange = MTV.mul(-1);
+                    objBPosChange = new Vec();
                 } else {
-                    objA.boundingBox.boxColor = new Color(100, 0, 255, 255);
-                    objB.boundingBox.boxColor = new Color(100, 0, 255, 255);
+                    // Apply position correction proportionally to inverse mass (mass-weighted)
+                    double totalInverseMass = objA.inverseMass + objB.inverseMass;
+                    if (totalInverseMass > 0) {
+                        double ratioA = objA.inverseMass / totalInverseMass;
+                        double ratioB = objB.inverseMass / totalInverseMass;
+                        objAPosChange = MTV.mul(-ratioA);
+                        objBPosChange = MTV.mul(ratioB);
+                    } else {
+                        // just in case both are static
+                        objAPosChange = MTV.mul(-0.5);
+                        objBPosChange = MTV.mul(0.5);
+                    }
+                }
+                objA.posChange.increase(objAPosChange);
+                objB.posChange.increase(objBPosChange);
+
+                Vec contact = objA.pos.add(MTV.mul(objA.radius)).sub(MTV.div(2));
+
+                //return null;
+                if (contact != null) {
+                    return applyImpulse(objA, objB, MTV, contact, objA.pos, objB.pos);
                 }
             }
         }
         return null;
-    }*/
+    }
 
     private static Vec clampMTVToOverlap(Object.BoundingBox bbA, Object.BoundingBox bbB, Vec mtv) {
         if (!isFiniteVec(mtv)) {

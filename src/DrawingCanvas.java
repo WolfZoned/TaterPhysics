@@ -15,7 +15,7 @@ public class DrawingCanvas extends JComponent {
     public int stepsOnFrame = 0;
     public int maxStepsPerFrame = 0;
 
-    public static ArrayList<CanvasMemory> canvasMemories = new ArrayList<>();
+    //public static ArrayList<CanvasMemory> canvasMemories = new ArrayList<>();
     public static int lastIterationNumber = 0;
 
     public static class CanvasMemory {
@@ -120,9 +120,9 @@ public class DrawingCanvas extends JComponent {
         Graphics2D g2d = (Graphics2D) g;
         width = Stage.drawn.stageWidth;
         height = Stage.drawn.stageHeight;
-        if (Stage.renderMemory == -1) {
+        if (Stage.recordedCanvasIndex == -1) {
             paintFrame(g2d, -1, Stage.objects, mouseX, mouseY, stepsOnFrame, null, null);
-            if (Stage.rememberCanvas && Stage.iterationNumber != lastIterationNumber) {
+            if (Stage.recordCanvas && Stage.iterationNumber != lastIterationNumber) {
                 ArrayList<Object> objectSnapshot;
                 ArrayList<Vec.coloredLine> lineSnapshot;
                 ArrayList<Vec.coloredVec> pointSnapshot;
@@ -133,18 +133,19 @@ public class DrawingCanvas extends JComponent {
                     lineSnapshot = copyLines(Stage.drawn.lines);
                     pointSnapshot = copyPoints(Stage.drawn.points);
                 }
-                canvasMemories.add(new CanvasMemory(lineSnapshot, pointSnapshot, objectSnapshot, stepsOnFrame, mouseX, mouseY));
+                Stage.recordedCanvas.add(new CanvasMemory(lineSnapshot, pointSnapshot, objectSnapshot, stepsOnFrame, mouseX, mouseY));
             }
             lastIterationNumber = Stage.iterationNumber;
-        } else if (Stage.renderMemory >= canvasMemories.size()){
-            paintFrame(g2d, canvasMemories.size(), Stage.objects, mouseX, mouseY, stepsOnFrame, null, null);
+        } else if (Stage.recordedCanvasIndex >= Stage.recordedCanvas.size()){
+            CanvasMemory memory = Stage.recordedCanvas.getLast();
+            paintFrame(g2d, Stage.recordedCanvas.size(), memory.objects, memory.mouseX, memory.mouseY, memory.stepsOnFrame, null, null);
         } else {
-            CanvasMemory memory = canvasMemories.get(Stage.renderMemory);
-            paintFrame(g2d, Stage.renderMemory, memory.objects, memory.mouseX, memory.mouseY, memory.stepsOnFrame, memory.lines, memory.points);
+            CanvasMemory memory = Stage.recordedCanvas.get(Stage.recordedCanvasIndex);
+            paintFrame(g2d, Stage.recordedCanvasIndex, memory.objects, memory.mouseX, memory.mouseY, memory.stepsOnFrame, memory.lines, memory.points);
         }
 
-        if (!Stage.rememberCanvas && Stage.renderMemory == -1) {
-            canvasMemories.clear();
+        if (!Stage.recordCanvas && Stage.recordedCanvasIndex == -1) {
+            Stage.recordedCanvas.clear();
         }
     }
 
@@ -167,9 +168,10 @@ public class DrawingCanvas extends JComponent {
         g2d.drawString("Mouse X: " + mouseX + "   Mouse Y: " + mouseY, 10, 20);
         g2d.drawString("Rel Mouse X: " + (mouseX - (width / 2)) + "   Rel Mouse Y: " + (mouseY - (height / 2)), 10, 40);
         g2d.drawString(stepsOnFrame + " steps this frame out of max " + maxStepsPerFrame + " at " + Stage.maxFps + " (max) fps", 10, 60);
-        int renderHeight = 0;
+        g2d.drawString(ObjectHandler.activeShapeCount + " shapes active of " + objects.size(), 10, 80);
+        int renderHeight = 20;
         if (Stage.mouseHoverObjectId != -1) {
-            g2d.drawString("Mouse is hovering object " + Stage.mouseHoverObjectId, 10, 80);
+            g2d.drawString("Mouse is hovering object " + Stage.mouseHoverObjectId, 10, 80 + renderHeight);
             renderHeight += 20;
             if (Stage.mouseHoverPointId != -1) {
                 g2d.drawString("Mouse is hovering point " + Stage.mouseHoverPointId, 10, 80 + renderHeight);
@@ -180,10 +182,12 @@ public class DrawingCanvas extends JComponent {
             g2d.drawString("Rendering memory from iteration " + memoryIndex, 10, 80 + renderHeight);
             renderHeight += 20;
         }
-        Image image = new ImageIcon("src/trashcan.png").getImage();
-        double imageWidth = image.getWidth(null);
-        double imageHeight = image.getHeight(null);
-        g2d.drawImage(image, width - 90, height - 135, (int) (imageWidth * 4), (int) (imageHeight * 4), null);
+        ScreenElements.Button.renderButtons(g2d, new Vec(width, height));
+        //Button.trashcan.render(g2d, new Vec(width, height));
+        //Image image = new ImageIcon("src/trashcan.png").getImage();
+        //double imageWidth = image.getWidth(null);
+        //double imageHeight = image.getHeight(null);
+        //g2d.drawImage(image, width - 90, height - 135, (int) (imageWidth * 4), (int) (imageHeight * 4), null);
         //IO.println("rendered at size" + (int) (imageWidth * 4) + "   " + (int) (imageHeight * 4));
     }
 }

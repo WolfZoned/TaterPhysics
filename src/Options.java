@@ -1,10 +1,33 @@
 import java.awt.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Options {
+    public static class colors {
+        public static Color RED = new Color(255, 20, 20, 255);
+        public static Color DARK_RED = new Color(125, 0, 0, 255);
+        public static Color DARK_GREEN = new Color(0, 100, 0, 255);
+        public static Color LIGHT_GREEN = new Color(80, 255, 80, 255);
+        public static Color BLUE = new Color(0, 0, 205, 255);
+        public static Color YELLOW = new Color(255, 255, 0, 255);
+        public static Color MAGENTA = new Color(255, 0, 255, 255);
+        public static Color CYAN = new Color(0, 255, 255, 255);
+        public static Color GRAY = new Color(128, 128, 128, 255);
+        public static Color ORANGE = new Color(255, 128, 0, 255);
+        public static Color PURPLE = new Color(128, 0, 255, 255);
+        public static Color SKY = new Color(0, 128, 255, 255);
+        public static Color VIOLET = new Color(128, 0, 128, 255);
+
+        public static Color[] list = {
+                RED, DARK_RED, DARK_GREEN, LIGHT_GREEN, BLUE, YELLOW, MAGENTA, CYAN, GRAY, ORANGE, PURPLE, SKY, VIOLET
+        };
+        public static Color randomColor() {
+            return list[ThreadLocalRandom.current().nextInt(0, list.length)];
+        }
+    }
+
     public static class Object {
         public static final boolean logCreation = false;
     }
-
     public static class AABB {
         public static final boolean render = false;
     }
@@ -12,6 +35,7 @@ public class Options {
     public static class GJK {
         public static final boolean debug = false;
         public static final boolean genAndDisplayAllOutsidePoints = false;
+
         public static final class console {
         }
 

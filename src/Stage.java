@@ -6,7 +6,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class Stage {
     public volatile int volatileMouseX;
@@ -14,10 +13,10 @@ public class Stage {
 
     public static int mouseHoverObjectId;
     public static int mouseHoverPointId;
-    public Input input;
-    public boolean pausedByToggle;
+    public static Input input;
+    public static boolean pausedByToggle;
     public boolean pauseKeyPressed;
-    public boolean paused;
+    public static boolean paused;
 
     //public double gravity;
 
@@ -25,9 +24,11 @@ public class Stage {
     public int interactionStage;
     private Vec interactionMouseOffset;
 
-    public static volatile boolean rememberCanvas;
+    public static ArrayList<DrawingCanvas.CanvasMemory> recordedCanvas = new ArrayList<>();
+    public static volatile boolean recordCanvas;
+    public static volatile boolean recordedCanvasPlayback;
     public static volatile int iterationNumber;
-    public static volatile int renderMemory;
+    public static volatile int recordedCanvasIndex;
 
     public volatile int width;
     public volatile int height;
@@ -41,9 +42,13 @@ public class Stage {
     public AtomicBoolean frameRendered;
     public static int maxFps;
 
+    public static ArrayList<Object> objects;
+    public static final java.lang.Object OBJECTS_LOCK = new java.lang.Object();
+    public static final java.lang.Object DRAWN_LOCK = new java.lang.Object();
+
     public static class drawn {
         static int stageWidth;
-        static int stageHeight;//hfdf
+        static int stageHeight;
         public static void SetVarsCauseImDumbAndDontKnowABetterWayToDoThis(int width, int height) {
             stageWidth = width;
             stageHeight = height;
@@ -65,10 +70,6 @@ public class Stage {
         }
     }
 
-    public static ArrayList<Object> objects;
-    public static final java.lang.Object OBJECTS_LOCK = new java.lang.Object();
-    public static final java.lang.Object DRAWN_LOCK = new java.lang.Object();
-
     public Stage(int width, int height, int scale, double stepSize, int maxStepsPerFrame, int fps) {
         this.width = width;
         this.height = height;
@@ -83,7 +84,7 @@ public class Stage {
     }
 
     public void initializePhysics() {
-        renderMemory = -1;
+        recordedCanvasIndex = -1;
         objects = ObjectHandler.createInitialObjects();
         mouseHoverObjectId = -1;
         interactionStage = 0;
@@ -120,9 +121,6 @@ public class Stage {
             @Override
             public void mousePressed(MouseEvent e) {
                 // You can check which button was pressed:
-                input.mouse.oldLeft = input.mouse.left;
-                input.mouse.oldRight = input.mouse.right;
-                input.mouse.oldMiddle = input.mouse.middle;
                 if (e.getButton() == MouseEvent.BUTTON1) {
                     input.mouse.left = true;
                 } else if (e.getButton() == MouseEvent.BUTTON2) {
@@ -260,6 +258,9 @@ public class Stage {
             }
             applyDeferredPosChanges();
         }
+        input.mouse.oldLeft = input.mouse.left;
+        input.mouse.oldRight = input.mouse.right;
+        input.mouse.oldMiddle = input.mouse.middle;
     }
 
     private void applyDeferredPosChanges() {
@@ -279,25 +280,25 @@ public class Stage {
     }
 
     private void checkPaused() {
-        if (input.keys.isPressed(KeyEvent.VK_M)) {
-            if (renderMemory == -1) {
-                renderMemory = 0;
-            } else if (input.keys.isPressed(KeyEvent.VK_UP) && renderMemory > 0) {
-                renderMemory--;
-            } else if (input.keys.isPressed(KeyEvent.VK_DOWN)) {
-                renderMemory++;
-            } else if (input.keys.isPressed(KeyEvent.VK_LEFT) && renderMemory > 0) {
-                renderMemory--;
+        if (recordedCanvasPlayback) {
+            if (recordedCanvasIndex == -1) {
+                recordedCanvasIndex = 0;
+            } else if (input.keys.isPressed(KeyEvent.VK_UP) && recordedCanvasIndex > 0) {
+                recordedCanvasIndex--;
+            } else if (input.keys.isPressed(KeyEvent.VK_DOWN) && recordedCanvasIndex < recordedCanvas.size() - 1) {
+                recordedCanvasIndex++;
+            } else if (input.keys.isPressed(KeyEvent.VK_LEFT) && recordedCanvasIndex > 0) {
+                recordedCanvasIndex--;
                 TaterMath.wait(100);
-            } else if (input.keys.isPressed(KeyEvent.VK_RIGHT)) {
-                renderMemory++;
+            } else if (input.keys.isPressed(KeyEvent.VK_RIGHT) && recordedCanvasIndex < recordedCanvas.size() - 1) {
+                recordedCanvasIndex++;
                 TaterMath.wait(100);
             }
         } else {
-            renderMemory = -1;
+            recordedCanvasIndex = -1;
         }
 
-        if (renderMemory == -1) {
+        if (recordedCanvasIndex == -1) {
             if (input.keys.isPressed(KeyEvent.VK_P) && !pausedByToggle && !pauseKeyPressed) {
                 pausedByToggle = true;
             } else if (input.keys.isPressed(KeyEvent.VK_P) && pausedByToggle && !pauseKeyPressed) {
@@ -305,7 +306,6 @@ public class Stage {
             }
             pauseKeyPressed = input.keys.isPressed(KeyEvent.VK_P);
             paused = pausedByToggle || input.keys.isPressed(KeyEvent.VK_SPACE);
-            rememberCanvas = input.keys.isPressed(KeyEvent.VK_Z);
         } else {
             paused = true;
         }
@@ -318,25 +318,27 @@ public class Stage {
                 objects = ObjectHandler.createInitialObjects();
             }
             if (interactionMode.equals("none")) {
-                int oldHoverId = mouseHoverObjectId;
-                mouseHoverObjectId = ObjectHandler.mouseHoveredObject(input.mouse.pos, objects);
-                if (input.keys.isPressed(KeyEvent.VK_SHIFT) && mouseHoverObjectId != -1) {
-                    mouseHoverPointId = objects.get(mouseHoverObjectId).closestPoint(input.mouse.pos);
-                } else {
-                    mouseHoverPointId = -1;
-                }
-                if (oldHoverId != -1 && oldHoverId != mouseHoverObjectId) {
-                    objects.get(oldHoverId).outlined = false;
-                }
-                if (mouseHoverObjectId != -1 && oldHoverId != mouseHoverObjectId) {
-                    objects.get(mouseHoverObjectId).outlined = true;
-                }
-                if (mouseHoverObjectId != -1 && input.mouse.left) {
-                    interactionMode = "drag";
-                    interactionStage = 1;
-                    interactionMouseOffset = objects.get(mouseHoverObjectId).pos.sub(input.mouse.pos);
-                } else if (!input.mouse.oldLeft && input.mouse.left && TaterMath.isPointInsideBox(input.mouse.pos, new Vec(width - 90, height - 135), new Vec(width - 90 + 72, height - 135 + 92))) {
-                    objects = ObjectHandler.createInitialObjects();
+                if (!buttonInteractions()) {
+                    int oldHoverId = mouseHoverObjectId;
+                    mouseHoverObjectId = ObjectHandler.mouseHoveredObject(input.mouse.pos, objects);
+                    if (input.keys.isPressed(KeyEvent.VK_SHIFT) && mouseHoverObjectId != -1) {
+                        mouseHoverPointId = objects.get(mouseHoverObjectId).closestPoint(input.mouse.pos);
+                    } else {
+                        mouseHoverPointId = -1;
+                    }
+                    if (oldHoverId != -1 && oldHoverId != mouseHoverObjectId) {
+                        objects.get(oldHoverId).outlined = false;
+                    }
+                    if (mouseHoverObjectId != -1 && oldHoverId != mouseHoverObjectId) {
+                        objects.get(mouseHoverObjectId).outlined = true;
+                    }
+                    if (mouseHoverObjectId != -1 && input.mouse.left) {
+                        interactionMode = "drag";
+                        interactionStage = 1;
+                        interactionMouseOffset = objects.get(mouseHoverObjectId).pos.sub(input.mouse.pos);
+                        //} else if (!input.mouse.oldLeft && input.mouse.left && Button.trashcan.hovered(input.mouse.pos, new Vec(width, height))) {
+                        //    objects = ObjectHandler.createInitialObjects();
+                    }
                 }
             } else if (interactionMode.equals("drag")) {
                 if (interactionStage == 1) {
@@ -352,6 +354,13 @@ public class Stage {
                 }
             }
         }
+    }
+
+    private boolean buttonInteractions() {
+        if (!input.mouse.left || input.mouse.oldLeft) {
+            return false;
+        }
+        return ScreenElements.Button.buttonClicked(input.mouse.pos, input.keys.isPressed(KeyEvent.VK_ESCAPE), new Vec(width, height));
     }
 
     private void worldForces(double stepSize) {

@@ -1,4 +1,5 @@
 import java.awt.*;
+import java.util.Objects;
 
 public class Object implements Cloneable {
     Vec pos = new Vec(); //position of center of mass
@@ -70,6 +71,7 @@ public class Object implements Cloneable {
         this.setAcceleration = setAcceleration;
         this.linearStatic = linearStatic;
         this.angularStatic = angularStatic;
+        this.restitution = 0.7;
 
         if (!linearStatic || !angularStatic) {
             polygonPropertiesCalc(this.setRel, 1.0, this.density);
@@ -123,6 +125,7 @@ public class Object implements Cloneable {
         this.setAcceleration = setAcceleration;
         this.linearStatic = linearStatic;
         this.angularStatic = angularStatic;
+        this.restitution = 0.7;
 
         this.area = radius * radius * Math.PI;
 
@@ -169,6 +172,10 @@ public class Object implements Cloneable {
 
     public static Object createPolygon(Color color, double x, double y, double rotation, double width, double height, int points, int index, Vec setAcceleration, boolean linearStatic,  boolean angularStatic) {
         return new Object(color, x, y, rotation, generatePolygonPoints(width, height, points), index, setAcceleration, linearStatic, angularStatic);
+    }
+
+    public static Object createCustom(Color color, double x, double y, double rotation, Vec[] points, int index, Vec setAcceleration, boolean linearStatic,  boolean angularStatic) {
+        return new Object(color, x, y, rotation, points, index, setAcceleration, linearStatic, angularStatic);
     }
 
     private static Vec[] generatePolygonPoints(double width, double height, int points) {
@@ -352,13 +359,29 @@ public class Object implements Cloneable {
             yMax = pos.y + radius;
         }
     }
-    
+
+    public boolean updateActive(Vec stageSize, double inactiveRange) {
+        if (this.pos.x > inactiveRange + stageSize.x || this.pos.x < -inactiveRange || this.pos.y > inactiveRange + stageSize.y || this.pos.y < -inactiveRange) {
+            this.active = false;
+        } else {
+            this.active = true;
+        }
+        return this.active;
+    }
+
     @Override
     public Object clone() {
-        if (this.type == "polygon") {
-            return new Object(this.color, this.pos.x, this.pos.y, this.rotation, Vec.copyArray(this.rel), this.index, this.setAcceleration.copy(), this.linearStatic, this.angularStatic);
-        } else if  (this.type == "circle") {
-            return new Object(this.color, this.pos.x, this.pos.y, this.rotation, this.radius, this.index, this.setAcceleration.copy(), this.linearStatic, this.angularStatic);
+        if (Objects.equals(this.type, "polygon")) {
+            Object cloned = new Object(this.color, this.pos.x, this.pos.y, this.rotation, Vec.copyArray(this.setRel), this.index, this.setAcceleration.copy(), this.linearStatic, this.angularStatic);
+            cloned.vel = this.vel.copy();
+            cloned.angularVel = this.angularVel;
+            cloned.updateRelativeCoordinates();
+            return cloned;
+        } else if  (Objects.equals(this.type, "circle")) {
+            Object cloned = new Object(this.color, this.pos.x, this.pos.y, this.rotation, this.radius, this.index, this.setAcceleration.copy(), this.linearStatic, this.angularStatic);
+            cloned.vel = this.vel.copy();
+            cloned.angularVel = this.angularVel;
+            return cloned;
         } else {
             return null;
         }
