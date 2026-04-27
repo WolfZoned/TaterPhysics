@@ -3,7 +3,7 @@ A data-driven 2D impulse based physics engine for Java.
 
 ---
 
-## How to run the release file (Java 21+):
+## How to run the release file (Java 21+)
 
 **Linux/MacOS:** - "./run.sh"
 
