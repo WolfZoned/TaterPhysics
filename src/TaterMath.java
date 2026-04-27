@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class TaterMath {
     /*public int upMod(int a, int b) {
@@ -19,6 +20,12 @@ public class TaterMath {
         }
         return shoelaceBuild;
     }
+
+    public static boolean isClockwise(Vec[] simplexList) {
+        //use shoelace - maybe extract full algorithm and then just use a part like in tater?
+        return TaterMath.isClockwise(new ArrayList<>(Arrays.asList(simplexList)));
+    }
+
     public static boolean isClockwise(ArrayList<Vec> simplexList) {
         //use shoelace - maybe extract full algorithm and then just use a part like in tater?
         return TaterMath.shoelace(simplexList) > 0;
@@ -59,5 +66,50 @@ public class TaterMath {
     public static boolean isPointInsideBox(Vec point, Vec boxCornerA,  Vec boxCornerB) {
         return !(point.x < Math.min(boxCornerA.x, boxCornerB.x) || point.x > Math.max(boxCornerA.x, boxCornerB.x) ||
             point.y < Math.min(boxCornerA.y, boxCornerB.y) || point.y > Math.max(boxCornerA.y, boxCornerB.y));
+    }
+
+    public static boolean isConvex(ArrayList<Vec> points) {
+        return isConvex(points, 1e-9);
+    }
+
+    public static boolean isConvex(ArrayList<Vec> points, double epsilon) {
+        if (points == null) {
+            return false;
+        }
+        return isConvex(points.toArray(new Vec[0]), epsilon);
+    }
+
+    public static boolean isConvex(Vec[] points) {
+        return isConvex(points, 1e-9);
+    }
+
+    public static boolean isConvex(Vec[] points, double epsilon) {
+        if (points == null || points.length < 3) {
+            return false;
+        }
+        int windingSign = 0;
+        int nonCollinearTurns = 0;
+        int count = points.length;
+        for (int i = 0; i < count; i++) {
+            Vec a = points[i];
+            Vec b = points[(i + 1) % count];
+            Vec c = points[(i + 2) % count];
+            double abx = b.x - a.x;
+            double aby = b.y - a.y;
+            double bcx = c.x - b.x;
+            double bcy = c.y - b.y;
+            double cross = abx * bcy - aby * bcx;
+            if (Math.abs(cross) <= epsilon) {
+                continue;
+            }
+            nonCollinearTurns++;
+            int currentSign = cross > 0 ? 1 : -1;
+            if (windingSign == 0) {
+                windingSign = currentSign;
+            } else if (windingSign != currentSign) {
+                return false;
+            }
+        }
+        return nonCollinearTurns > 0;
     }
 }

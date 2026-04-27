@@ -11,8 +11,8 @@ public class Stage {
     public volatile int volatileMouseX;
     public volatile int volatileMouseY;
 
-    public static int mouseHoverObjectId;
-    public static int mouseHoverPointId;
+    public static int mouseHoverObjectIndex;
+    public static int mouseHoverPointIndex;
     public static Input input;
     public static boolean pausedByToggle;
     public boolean pauseKeyPressed;
@@ -20,9 +20,9 @@ public class Stage {
 
     //public double gravity;
 
-    public String interactionMode;
-    public int interactionStage;
-    private Vec interactionMouseOffset;
+    public static String interactionMode;
+    public static int interactionStage;
+    private static Vec interactionMouseOffset;
 
     public static ArrayList<DrawingCanvas.CanvasMemory> recordedCanvas = new ArrayList<>();
     public static volatile boolean recordCanvas;
@@ -86,7 +86,7 @@ public class Stage {
     public void initializePhysics() {
         recordedCanvasIndex = -1;
         objects = ObjectHandler.createInitialObjects();
-        mouseHoverObjectId = -1;
+        mouseHoverObjectIndex = -1;
         interactionStage = 0;
         interactionMode = "none";
         interactionMouseOffset = new Vec(0, 0);
@@ -224,6 +224,14 @@ public class Stage {
                 synchronized (DRAWN_LOCK) {
                     drawn.points.clear();
                     drawn.lines.clear();
+                    for (int i = 0; i < ScreenElements.shapeCreationShit.drawnPoints.size(); i++) {
+                        Vec point = ScreenElements.shapeCreationShit.drawnPoints.get(i);
+                        drawn.points.add(new Vec.coloredVec(point, new Color(255, 0, 0), 5));
+                        if (i > 0) {
+                            Vec prevPoint = ScreenElements.shapeCreationShit.drawnPoints.get(i - 1);
+                            drawn.lines.add(new Vec.coloredLine(prevPoint, point, new Color(255, 0, 0), 2));
+                        }
+                    }
                 }
             }
             stepsOnFrame = 0;
@@ -319,23 +327,23 @@ public class Stage {
             }
             if (interactionMode.equals("none")) {
                 if (!buttonInteractions()) {
-                    int oldHoverId = mouseHoverObjectId;
-                    mouseHoverObjectId = ObjectHandler.mouseHoveredObject(input.mouse.pos, objects);
-                    if (input.keys.isPressed(KeyEvent.VK_SHIFT) && mouseHoverObjectId != -1) {
-                        mouseHoverPointId = objects.get(mouseHoverObjectId).closestPoint(input.mouse.pos);
+                    int oldHoverId = mouseHoverObjectIndex;
+                    mouseHoverObjectIndex = ObjectHandler.mouseHoveredObject(input.mouse.pos, objects);
+                    if (input.keys.isPressed(KeyEvent.VK_SHIFT) && mouseHoverObjectIndex != -1) {
+                        mouseHoverPointIndex = objects.get(mouseHoverObjectIndex).closestPoint(input.mouse.pos);
                     } else {
-                        mouseHoverPointId = -1;
+                        mouseHoverPointIndex = -1;
                     }
-                    if (oldHoverId != -1 && oldHoverId != mouseHoverObjectId) {
+                    if (oldHoverId != -1 && oldHoverId != mouseHoverObjectIndex) {
                         objects.get(oldHoverId).outlined = false;
                     }
-                    if (mouseHoverObjectId != -1 && oldHoverId != mouseHoverObjectId) {
-                        objects.get(mouseHoverObjectId).outlined = true;
+                    if (mouseHoverObjectIndex != -1 && oldHoverId != mouseHoverObjectIndex) {
+                        objects.get(mouseHoverObjectIndex).outlined = true;
                     }
-                    if (mouseHoverObjectId != -1 && input.mouse.left) {
+                    if (mouseHoverObjectIndex != -1 && input.mouse.left) {
                         interactionMode = "drag";
                         interactionStage = 1;
-                        interactionMouseOffset = objects.get(mouseHoverObjectId).pos.sub(input.mouse.pos);
+                        interactionMouseOffset = objects.get(mouseHoverObjectIndex).pos.sub(input.mouse.pos);
                         //} else if (!input.mouse.oldLeft && input.mouse.left && Button.trashcan.hovered(input.mouse.pos, new Vec(width, height))) {
                         //    objects = ObjectHandler.createInitialObjects();
                     }
@@ -347,11 +355,30 @@ public class Stage {
                         interactionStage = 0;
                         return;
                     }
-                    Object obj = objects.get(mouseHoverObjectId);
+                    Object obj = objects.get(mouseHoverObjectIndex);
                     //if (newFrame) { obj.pos.increase(input.mouse.stepChange); }
                     if (newFrame) { obj.pos = input.mouse.pos.add(interactionMouseOffset); }
                     obj.vel = input.mouse.stepChange.div(stepSize); //i don't get why i have to divide by stepsize here but ok
                 }
+            } else if (interactionMode.equals("drawPolygonPoints") && newFrame) {
+                if (ScreenElements.Button.cancel.hovered(input.mouse.pos, new Vec(width, height)) && input.mouse.left && !input.mouse.oldLeft) {
+                    interactionMode = "none";
+                    ScreenElements.Button.addMode = "none";
+                    ScreenElements.Button.add.rendered = true;
+                    ScreenElements.Button.cancel.rendered = false;
+                    ScreenElements.Button.checkmark.rendered = false;
+                    ScreenElements.shapeCreationShit.drawnPoints.clear();
+                } else if (input.keys.isPressed(KeyEvent.VK_ENTER) || (ScreenElements.Button.checkmark.hovered(input.mouse.pos, new Vec(width, height)) && input.mouse.left && !input.mouse.oldLeft)) {
+                    ScreenElements.shapeCreationShit.createShape("drawn", new Vec(width, height));
+                    interactionMode = "none";
+                    ScreenElements.Button.addMode = "none";
+                    ScreenElements.Button.add.rendered = true;
+                    ScreenElements.Button.cancel.rendered = false;
+                    ScreenElements.Button.checkmark.rendered = false;
+                } else if (input.mouse.left && !input.mouse.oldLeft) {
+                    ScreenElements.shapeCreationShit.drawnPoints.add(input.mouse.pos.copy());
+                }
+
             }
         }
     }
@@ -387,17 +414,19 @@ public class Stage {
                 }
             }
 
-            for (Object obj : objects) {
+            //for (Object obj : objects) {
+            for (int i = 0; i < objects.size(); i++) {
+                Object obj = objects.get(i);
                 if (input.keys.isPressed(KeyEvent.VK_K)) {
-                    if (mouseHoverObjectId == -1) {
+                    if (mouseHoverObjectIndex == -1) {
                         obj.vel = new Vec(0, 0);
                         obj.angularVel = 0;
-                    } else if (obj.index == mouseHoverObjectId) {
+                    } else if (i == mouseHoverObjectIndex) {
                         obj.vel = new Vec(0, 0);
                         obj.angularVel = 0;
                     }
                 }
-                if (!(interactionMode.equals("drag") && obj.index == mouseHoverObjectId)) {
+                if (!(interactionMode.equals("drag") && i == mouseHoverObjectIndex)) {
                     obj.pos = obj.pos.add(obj.vel.mul(stepSize));
                 }
                 obj.rotation += obj.angularVel * stepSize;

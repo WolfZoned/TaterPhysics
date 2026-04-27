@@ -170,11 +170,11 @@ public class DrawingCanvas extends JComponent {
         g2d.drawString(stepsOnFrame + " steps this frame out of max " + maxStepsPerFrame + " at " + Stage.maxFps + " (max) fps", 10, 60);
         g2d.drawString(ObjectHandler.activeShapeCount + " shapes active of " + objects.size(), 10, 80);
         int renderHeight = 20;
-        if (Stage.mouseHoverObjectId != -1) {
-            g2d.drawString("Mouse is hovering object " + Stage.mouseHoverObjectId, 10, 80 + renderHeight);
+        if (Stage.mouseHoverObjectIndex != -1) {
+            g2d.drawString("Mouse is hovering object " + Stage.mouseHoverObjectIndex, 10, 80 + renderHeight);
             renderHeight += 20;
-            if (Stage.mouseHoverPointId != -1) {
-                g2d.drawString("Mouse is hovering point " + Stage.mouseHoverPointId, 10, 80 + renderHeight);
+            if (Stage.mouseHoverPointIndex != -1) {
+                g2d.drawString("Mouse is hovering point " + Stage.mouseHoverPointIndex, 10, 80 + renderHeight);
                 renderHeight += 20;
             }
         }
@@ -182,7 +182,7 @@ public class DrawingCanvas extends JComponent {
             g2d.drawString("Rendering memory from iteration " + memoryIndex, 10, 80 + renderHeight);
             renderHeight += 20;
         }
-        ScreenElements.Button.renderButtons(g2d, new Vec(width, height));
+        ScreenElements.render(g2d, new Vec(width, height));
         //Button.trashcan.render(g2d, new Vec(width, height));
         //Image image = new ImageIcon("src/trashcan.png").getImage();
         //double imageWidth = image.getWidth(null);

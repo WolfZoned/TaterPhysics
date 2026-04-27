@@ -2,32 +2,80 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
-
+import java.util.Objects;
 
 
 public class ScreenElements {
+    public static void render(Graphics2D g2d, Vec stageSize) {
+        Button.renderButtons(g2d, stageSize);
+    }
     public static class GhostObject {
         public static ArrayList<Object> ghostObjects = new ArrayList<>();
         public static Object objectConstructor;
 
         public static void createRectangleObjectConstructor(Color color, Vec pos, Vec size, double rotation) {
-            objectConstructor = Object.createRectangle(color, pos.x, pos.y, rotation, size.x, size.y, ghostObjects.size(), new Vec(), false, false);
+            objectConstructor = Object.createRectangle(color, pos.x, pos.y, rotation, size.x, size.y, new Vec(), false, false);
             ghostObjects.add(objectConstructor);
         }
 
         public static void createPolygonObjectConstructor(Color color, Vec pos, Vec size, int points, double rotation) {
-            objectConstructor = Object.createPolygon(color, pos.x, pos.y, rotation, size.x, size.y, points, ghostObjects.size(), new Vec(), false, false);
+            objectConstructor = Object.createPolygon(color, pos.x, pos.y, rotation, size.x, size.y, points, new Vec(), false, false);
             ghostObjects.add(objectConstructor);
         }
 
         public static void createCircleObjectConstructor(Color color, Vec pos, double radius, double rotation) {
-            objectConstructor = Object.createCircle(color, pos.x, pos.y, rotation, radius, ghostObjects.size(), new Vec(), false, false);
+            objectConstructor = Object.createCircle(color, pos.x, pos.y, rotation, radius, new Vec(), false, false);
             ghostObjects.add(objectConstructor);
         }
 
         public static void createDrawnObjectConstructor(Color color, Vec pos, double rotation, Vec[] points) {
-            objectConstructor = Object.createCustom(color, pos.x, pos.y, rotation, points, ghostObjects.size(), new Vec(), false, false);
+            objectConstructor = Object.createCustom(color, pos.x, pos.y, rotation, points, new Vec(), false, false);
             ghostObjects.add(objectConstructor);
+        }
+    }
+
+    public static class shapeCreationShit {
+        public static ArrayList<Vec> drawnPoints = new ArrayList<>();
+        //public static String shapeType;
+        private static Object initializedShape;
+        //public static void initializePolygon(String shapeType) {
+        //    initializedShape = Object.createPolygon(Options.colors.randomColor(), 0, 0, 0, 30, 30, drawnPoints.size(), new Vec(), false, false);
+        //}
+            //else if (shapeType.equals("circle")) {
+
+            //} else if (shapeType.equals("draw")) {
+
+            //}
+
+
+        public static void createShape(String shapeType, Vec stageSize) {
+            if (shapeType.equals("polygon")) {
+                //create polygon with polygonPoints
+                Stage.objects.add(Object.createRectangle(Options.colors.randomColor(), stageSize.div(2).x, stageSize.div(2).y, 0.0, 30, 30, new Vec(0, 0.4), false, false));
+            } else if (shapeType.equals("circle")) {
+                //create circle with polygonPoints.get(0) as center and distance to polygonPoints.get(1) as radius
+                Stage.objects.add(Object.createCircle(Options.colors.randomColor(), stageSize.div(2).x, stageSize.div(2).y, 0, 30, new Vec(0, 0.3), false, false));
+            } else if (shapeType.equals("drawn")) {
+                //create custom shape with polygonPoints as points
+                Vec[] pointsArray = drawnPoints.toArray(new Vec[0]);
+                if (!TaterMath.isConvex(pointsArray)) {
+                    IO.println("Error: Drawn polygon must be convex.");
+                    drawnPoints.clear();
+                    return;
+                }
+                if (TaterMath.isClockwise(pointsArray)) {
+                    //reverse points to be counterclockwise
+                    for (int i = 0; i < pointsArray.length / 2; i++) {
+                        Vec temp = pointsArray[i];
+                        pointsArray[i] = pointsArray[pointsArray.length - 1 - i];
+                        pointsArray[pointsArray.length - 1 - i] = temp;
+                    }
+                }
+                Stage.objects.add(Object.createCustom(Options.colors.randomColor(), stageSize.div(2).x, stageSize.div(2).y, 0, pointsArray, new Vec(0, 0.3), false, false));
+                drawnPoints.clear();
+            } else {
+                IO.println("Error: Invalid shape type");
+            }
         }
     }
 
@@ -45,7 +93,7 @@ public class ScreenElements {
         private static final int buttonSpacing = 100;
         private static final int smallButtonSpacing = 70;
 
-        private static String addMode = "none";
+        public static String addMode = "none";
 
         //public static Button trashcan = new Button("trashcan", new Vec(90, 135), 4, false, false);
         //public static Button add = new Button("add", new Vec(20, 115), 4, true, false);
@@ -53,7 +101,7 @@ public class ScreenElements {
 
         public static Button circleAdd = new Button("shape/circle", new Vec(20, 115 + buttonSpacing), 4, false, true, false);
         public static Button rectangleAdd = new Button("shape/rectangle", new Vec(20, 115 + buttonSpacing * 2), 4, false, true, false);
-        //public static Button drawAdd = new Button("draw", new Vec(20, 115 + addButtonSpacing * 3), 4, false, true, false);
+        public static Button drawAdd = new Button("shape/draw", new Vec(20, 115 + buttonSpacing * 3), 4, false, true, false);
 
         public static Button cancel = new Button("cancel", new Vec(20, 115), 4, false, true, false);
         public static Button checkmark = new Button("checkmark", new Vec(20, 115 + buttonSpacing), 4, false, true, false);
@@ -200,7 +248,7 @@ public class ScreenElements {
                     add.rendered = false;
                     circleAdd.rendered = true;
                     rectangleAdd.rendered = true;
-                    //Button.drawAdd.rendered = true;
+                    drawAdd.rendered = true;
                     cancel.rendered = true;
                     checkmark.rendered = false;
                     return true;
@@ -211,60 +259,81 @@ public class ScreenElements {
                     add.rendered = true;
                     circleAdd.rendered = false;
                     rectangleAdd.rendered = false;
-                    //Button.drawAdd.rendered = false;
+                    drawAdd.rendered = false;
                     cancel.rendered = false;
                     checkmark.rendered = false;
                     checkmark.rendered = false;
                     return false;
                 }
                 if (circleAdd.hovered(mousePos, stageSize)) {
-                    addMode = "circle";
-                    circleAdd.rendered = false;
-                    rectangleAdd.rendered = false;
-                    //Button.drawAdd.rendered = false;
-                    checkmark.rendered = true;
-                    return true;
+                    if (Objects.equals(Stage.interactionMode, "none")) {
+                        //addMode = "circle";
+                        shapeCreationShit.createShape("circle", stageSize);
+                        addMode = "none";
+                        circleAdd.rendered = false;
+                        rectangleAdd.rendered = false;
+                        drawAdd.rendered = false;
+                        checkmark.rendered = false;
+                        cancel.rendered = false;
+                        add.rendered = true;
+                        return true;
+                    }
                 }
                 if (rectangleAdd.hovered(mousePos, stageSize)) {
-                    addMode = "polygon";
-                    circleAdd.rendered = false;
-                    rectangleAdd.rendered = false;
-                    //Button.drawAdd.rendered = false;
-                    checkmark.rendered = true;
-                    return true;
+                    if (Objects.equals(Stage.interactionMode, "none")) {
+                        //addMode = "polygon";
+                        shapeCreationShit.createShape("polygon", stageSize);
+                        addMode = "none";
+                        circleAdd.rendered = false;
+                        rectangleAdd.rendered = false;
+                        drawAdd.rendered = false;
+                        checkmark.rendered = false;
+                        cancel.rendered = false;
+                        add.rendered = true;
+                        return true;
+                    }
                 }
-                //if (Button.drawAdd.hovered(mousePos, stageSize)) {
-                //    addMode = "draw";
-                //    Button.circleAdd.rendered = false;
-                //    Button.rectangleAdd.rendered = false;
-                //    Button.drawAdd.rendered = false;
-                //    return true;
-                //}
-            } else if (addMode.equals("circle") && (checkmark.hovered(mousePos, stageSize) || cancel.hovered(mousePos, stageSize))) {
-                if (checkmark.hovered(mousePos, stageSize)) {
-                    //GhostObject.createCircleObjectConstructor(new Color(125, 125, 125), stageSize.div(2), 30, 0);
-                    Stage.objects.add(Object.createCircle(Options.colors.randomColor(), stageSize.div(2).x, stageSize.div(2).y, 0, 30, Stage.objects.size(), new Vec(0, 0.3), false, false));
+                if (drawAdd.hovered(mousePos, stageSize)) {
+                    if (Objects.equals(Stage.interactionMode, "none")) {
+                        Stage.interactionMode = "drawPolygonPoints";
+                        addMode = "draw";
+                        circleAdd.rendered = false;
+                        rectangleAdd.rendered = false;
+                        drawAdd.rendered = false;
+                        checkmark.rendered = true;
+                        return true;
+                    }
                 }
-                addMode = "none";
-                Button.add.rendered = true;
-                Button.cancel.rendered = false;
-                Button.checkmark.rendered = false;
-                return true;
-            } else if (addMode.equals("polygon") && (checkmark.hovered(mousePos, stageSize, false) || cancel.hovered(mousePos, stageSize))) {
-                if (checkmark.hovered(mousePos, stageSize)) {
-                    //GhostObject.createPolygonObjectConstructor(new Color(125, 125, 125), stageSize.div(2), new Vec(30, 30), 3, 0);
-                    Stage.objects.add(Object.createRectangle(Options.colors.randomColor() , 450, 550, 0.0, 30, 30, Stage.objects.size(), new Vec(0, 0.4), false, false));
-                }
-                addMode = "none";
-                Button.add.rendered = true;
-                Button.cancel.rendered = false;
-                Button.checkmark.rendered = false;
-                return true;
+            //} else if (addMode.equals("circle") && (checkmark.hovered(mousePos, stageSize) || cancel.hovered(mousePos, stageSize))) {
+            //    if (checkmark.hovered(mousePos, stageSize)) {
+            //        //GhostObject.createCircleObjectConstructor(new Color(125, 125, 125), stageSize.div(2), 30, 0);
+            //        Stage.objects.add(Object.createCircle(Options.colors.randomColor(), stageSize.div(2).x, stageSize.div(2).y, 0, 30, new Vec(0, 0.3), false, false));
+            //    }
+            //    addMode = "none";
+            //    add.rendered = true;
+            //    cancel.rendered = false;
+            //    checkmark.rendered = false;
+            //    return true;
+            //} else if (addMode.equals("polygon") && (checkmark.hovered(mousePos, stageSize, false) || cancel.hovered(mousePos, stageSize))) {
+            //    if (checkmark.hovered(mousePos, stageSize)) {
+            //        //GhostObject.createPolygonObjectConstructor(new Color(125, 125, 125), stageSize.div(2), new Vec(30, 30), 3, 0);
+            //        //Stage.objects.add(Object.createRectangle(Options.colors.randomColor() , 450, 550, 0.0, 30, 30, Stage.objects.size(), new Vec(0, 0.4), false, false));
+            //        //Stage.interactionMode = "addPolygon";
+            //    }
+            //    addMode = "none";
+            //    add.rendered = true;
+            //    cancel.rendered = false;
+            //    checkmark.rendered = false;
+            //    return true;
             //} else if (addMode.equals("draw")) {
+            //    if (checkmark.hovered(mousePos, stageSize)) {
+            //        shapeCreationShit.createShape("drawn", stageSize);
+            //    }
             //    addMode = "none";
             //    Button.add.rendered = true;
             //    Button.cancel.rendered = false;
-            //    GhostObject.createDrawnObjectConstructor(new Color(125, 125, 125), stageSize.div(2), 30, 0);
+            //    checkmark.rendered = false;
+            //    //GhostObject.createDrawnObjectConstructor(new Color(125, 125, 125), stageSize.div(2), 30, 0);
             //    return true;
             }
             return false;

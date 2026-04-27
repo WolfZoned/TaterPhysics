@@ -54,13 +54,13 @@ public class ObjectRenderer {
         } else if (obj.type.equals("polygon")) {
             drawBoundingBox(g2d, obj.boundingBox, obj.boundingBox.boxColor);
             drawPolygon(g2d, obj.color, obj.rel, obj.pos, obj.outlined);
-            if (obj.index == Stage.mouseHoverObjectId && Stage.mouseHoverPointId != -1) {
+            if (obj.ID == Stage.mouseHoverObjectIndex && Stage.mouseHoverPointIndex != -1) {
                 g2d.setColor(new Color(56, 65, 174));
-                g2d.fillOval((int) obj.pos.add(obj.rel[Stage.mouseHoverPointId]).x - 5, (int) obj.pos.add(obj.rel[Stage.mouseHoverPointId]).y - 5, 10, 10);
+                g2d.fillOval((int) obj.pos.add(obj.rel[Stage.mouseHoverPointIndex]).x - 5, (int) obj.pos.add(obj.rel[Stage.mouseHoverPointIndex]).y - 5, 10, 10);
             }
         } else if  (obj.type.equals("circle")) {
             drawBoundingBox(g2d, obj.boundingBox, obj.boundingBox.boxColor);
-            drawCircle(g2d, obj.color, obj.radius, obj.pos);
+            drawCircle(g2d, obj.color, obj.radius, obj.pos, obj.outlined);
         }
     }
 
@@ -97,9 +97,15 @@ public class ObjectRenderer {
         }
     }
 
-    private void drawCircle(Graphics2D g2d, Color color, double radius, Vec pos) {
+    private void drawCircle(Graphics2D g2d, Color color, double radius, Vec pos, boolean outlined) {
         g2d.setColor(color);
         g2d.fill(new Ellipse2D.Double(pos.x - radius, pos.y - radius, 2 * radius, 2 * radius));
+        if (outlined) {
+            g2d.setStroke(new BasicStroke(4f));
+            g2d.setColor(new Color(51, 51, 51, 255));
+            g2d.draw(new Ellipse2D.Double(pos.x - radius, pos.y - radius, 2 * radius, 2 * radius));
+            g2d.setStroke(new BasicStroke(1f));
+        }
     }
     /*private void drawRectangle(Graphics2D g2d, double x, double y, double w, double h, double rotation) {
         Rectangle2D.Double r = new Rectangle2D.Double(x, y, w, h);

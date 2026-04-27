@@ -4,7 +4,8 @@ import java.util.Objects;
 public class Object implements Cloneable {
     Vec pos = new Vec(); //position of center of mass
 
-    public int index;
+    public int ID;
+    public static int lastID;
 
     public double rotation; //radians
     public String type;
@@ -49,7 +50,7 @@ public class Object implements Cloneable {
     static double oldRotation;
 
     /// polygon constructor
-    public Object(Color color, double x, double y, double rotation, Vec[] points, int index, Vec setAcceleration, boolean linearStatic, boolean angularStatic) { //polygon shape
+    public Object(Color color, double x, double y, double rotation, Vec[] points, Vec setAcceleration, boolean linearStatic, boolean angularStatic) { //polygon shape
         //make sure all shapes are counter-clockwise for now
         this.pos = new Vec(x, y);
         this.vel = new Vec(0.0, 0.0);
@@ -59,7 +60,8 @@ public class Object implements Cloneable {
         this.color = color;
         this.density = 1.0;
         this.outlined = false;
-        this.index = index;
+        this.ID = lastID++;
+        lastID = ID;
         this.boundingBox = new BoundingBox();
         this.setRel = points;
         this.rel = Vec.copyArray(this.setRel);
@@ -104,7 +106,7 @@ public class Object implements Cloneable {
     }
 
     /// circle constructor
-    public Object(Color color, double x, double y, double rotation, double radius, int index, Vec setAcceleration, boolean linearStatic, boolean angularStatic) { //polygon shape
+    public Object(Color color, double x, double y, double rotation, double radius, Vec setAcceleration, boolean linearStatic, boolean angularStatic) { //polygon shape
         //make sure all shapes are counter-clockwise for now
         this.pos = new Vec(x, y);
         this.vel = new Vec(0.0, 0.0);
@@ -114,7 +116,8 @@ public class Object implements Cloneable {
         this.color = color;
         this.density = 1.0;
         this.outlined = false;
-        this.index = index;
+        this.ID = lastID++;
+        lastID = ID;
         this.radius = radius;
         this.boundingBox = new BoundingBox();
         this.velChange = new Vec(0.0, 0.0);
@@ -157,25 +160,25 @@ public class Object implements Cloneable {
         }
     }
 
-    public static Object createRectangle(Color color, double x, double y, double rotation, double width, double height, int index, Vec setAcceleration, boolean linearStatic, boolean angularStatic) {//rectangle
+    public static Object createRectangle(Color color, double x, double y, double rotation, double width, double height, Vec setAcceleration, boolean linearStatic, boolean angularStatic) {//rectangle
         return new Object(color, x, y, rotation, new Vec[] {
                         new Vec(width / 2, height / 2),
                         new Vec(width / 2, height / -2),
                         new Vec(width / -2, height / -2),
                         new Vec(width / -2, height / 2)}
-                , index, setAcceleration, linearStatic, angularStatic);
+                , setAcceleration, linearStatic, angularStatic);
     }
 
-    public static Object createCircle(Color color, double x, double y, double rotation, double radius, int index, Vec setAcceleration, boolean linearStatic, boolean angularStatic) {
-        return new Object(color, x, y, rotation, radius, index, setAcceleration, linearStatic, angularStatic);
+    public static Object createCircle(Color color, double x, double y, double rotation, double radius, Vec setAcceleration, boolean linearStatic, boolean angularStatic) {
+        return new Object(color, x, y, rotation, radius, setAcceleration, linearStatic, angularStatic);
     }
 
-    public static Object createPolygon(Color color, double x, double y, double rotation, double width, double height, int points, int index, Vec setAcceleration, boolean linearStatic,  boolean angularStatic) {
-        return new Object(color, x, y, rotation, generatePolygonPoints(width, height, points), index, setAcceleration, linearStatic, angularStatic);
+    public static Object createPolygon(Color color, double x, double y, double rotation, double width, double height, int points, Vec setAcceleration, boolean linearStatic,  boolean angularStatic) {
+        return new Object(color, x, y, rotation, generatePolygonPoints(width, height, points), setAcceleration, linearStatic, angularStatic);
     }
 
-    public static Object createCustom(Color color, double x, double y, double rotation, Vec[] points, int index, Vec setAcceleration, boolean linearStatic,  boolean angularStatic) {
-        return new Object(color, x, y, rotation, points, index, setAcceleration, linearStatic, angularStatic);
+    public static Object createCustom(Color color, double x, double y, double rotation, Vec[] points, Vec setAcceleration, boolean linearStatic,  boolean angularStatic) {
+        return new Object(color, x, y, rotation, points, setAcceleration, linearStatic, angularStatic);
     }
 
     private static Vec[] generatePolygonPoints(double width, double height, int points) {
@@ -372,13 +375,13 @@ public class Object implements Cloneable {
     @Override
     public Object clone() {
         if (Objects.equals(this.type, "polygon")) {
-            Object cloned = new Object(this.color, this.pos.x, this.pos.y, this.rotation, Vec.copyArray(this.setRel), this.index, this.setAcceleration.copy(), this.linearStatic, this.angularStatic);
+            Object cloned = new Object(this.color, this.pos.x, this.pos.y, this.rotation, Vec.copyArray(this.setRel), this.setAcceleration.copy(), this.linearStatic, this.angularStatic);
             cloned.vel = this.vel.copy();
             cloned.angularVel = this.angularVel;
             cloned.updateRelativeCoordinates();
             return cloned;
         } else if  (Objects.equals(this.type, "circle")) {
-            Object cloned = new Object(this.color, this.pos.x, this.pos.y, this.rotation, this.radius, this.index, this.setAcceleration.copy(), this.linearStatic, this.angularStatic);
+            Object cloned = new Object(this.color, this.pos.x, this.pos.y, this.rotation, this.radius, this.setAcceleration.copy(), this.linearStatic, this.angularStatic);
             cloned.vel = this.vel.copy();
             cloned.angularVel = this.angularVel;
             return cloned;

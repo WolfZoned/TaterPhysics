@@ -42,13 +42,13 @@ public class ObjectHandler {
 
     public static ArrayList<Object> createInitialObjects() {
         ArrayList<Object> objects = new ArrayList<>();
-        objects.add(Object.createRectangle(new Color(50, 0, 250), 575, 1200, 0.0, 1100, 1100, objects.size(), new Vec(0, 0), true, false));
+        objects.add(Object.createRectangle(new Color(50, 0, 250), 575, 1200, 0.0, 1100, 1100, new Vec(0, 0), true, false));
         //objects.get(0).angularVel = 0.01;
-        objects.add(Object.createRectangle(Options.colors.ORANGE, 450, 550, 0.0, 30, 30, objects.size(), new Vec(0, 0), false, true));
-        objects.add(Object.createPolygon(Options.colors.CYAN, 400, 550, 0.0, 30, 30, 5, objects.size(), new Vec(0, 0.3), false, false));
-        objects.add(Object.createPolygon(Options.colors.LIGHT_GREEN, 400, 550, 0.0, 60, 60, 3, objects.size(), new Vec(0, 0.3), false, false));
-        objects.add(Object.createPolygon(Options.colors.SKY, 450, 500, 0.0, 60, 60, 8, objects.size(), new Vec(0, 0.3), false, false));
-        objects.add(Object.createCircle(Options.colors.YELLOW, 500, 500, 0.0, 30, objects.size(), new Vec(0, 0.3), false, false));
+        objects.add(Object.createRectangle(Options.colors.ORANGE, 450, 550, 0.0, 30, 30, new Vec(0, 0), false, true));
+        objects.add(Object.createPolygon(Options.colors.CYAN, 400, 550, 0.0, 30, 30, 5, new Vec(0, 0.3), false, false));
+        objects.add(Object.createPolygon(Options.colors.LIGHT_GREEN, 400, 550, 0.0, 60, 60, 3, new Vec(0, 0.3), false, false));
+        objects.add(Object.createPolygon(Options.colors.SKY, 450, 500, 0.0, 60, 60, 8, new Vec(0, 0.3), false, false));
+        objects.add(Object.createCircle(Options.colors.YELLOW, 500, 500, 0.0, 30, new Vec(0, 0.3), false, false));
         activeShapeCount = objects.size();
         return objects;
     }
@@ -71,11 +71,11 @@ public class ObjectHandler {
             if (obj != null) {
                 if (obj.type.equals("polygon")) {
                     if (obj.isPointInside(mousePos)) {
-                        return obj.index;
+                        return i;
                     }
                 } else if (obj.type.equals("circle")) {
                     if (Vec.len(mousePos, obj.pos) <= obj.radius) {
-                        return obj.index;
+                        return i;
                     }
                 }
             }
@@ -690,7 +690,7 @@ public class ObjectHandler {
         }
         if (Options.ContactPoints.debug) {
             IO.println("");
-            IO.println("Shape A index: " + objA.index + "   Shape B index: " + objB.index);
+            IO.println("Shape A index: " + objA.ID + "   Shape B index: " + objB.ID);
             IO.println("MinDistPointIndex1: " + minDistPointIndex1 + "   ShapeIndex1: " + shapeIndex1 + "   MinDistPointIndex2: " + minDistPointIndex2 + "   ShapeIndex2: " + shapeIndex2);
         }
 
