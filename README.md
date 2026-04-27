@@ -28,6 +28,7 @@ A data-driven 2D impulse based physics engine for Java.
 
 ## About
 This is a 2D Impulse physics engine. It uses published algorithms like GJK and EPA for collision detection, and generates impulse vectors to apply corrective forces for resolving those collisions. I created this to learn Java after my previous platform was no longer a good fit.
+Check out the devlogs leading up to the first release on [Flavortown](https://flavortown.hackclub.com/projects/5129)
 
 ---
 
