@@ -30,6 +30,9 @@ See [INSTALL.md](INSTALL.md) for detailed installation instructions.
 - Friction
 - Debug tools - Stop/slow step rate - Record and rewind frames
 
+## About
+This is a 2D Impulse physics engine. It uses published algorithms such as GJK and EPA for collision detection, and generates impulse vectors to apply corrective forces for resolving those collisions. I created this to learn Java after my previous platform was no longer a good fit.
+
 ## How to Use
 - Press **R** to reset shapes
 - Drag shapes to move or throw them
