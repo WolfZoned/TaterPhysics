@@ -6,7 +6,7 @@
 
 **Linux/macOS:**
 ```bash
-chmod +x ./run.sh && ./run.sh
+./run.sh
 ```
 
 **Windows:**
@@ -20,7 +20,6 @@ This will automatically build and run the demo.
 
 **First time - Build the project:**
 ```bash
-chmod +x ./setup.sh
 ./setup.sh
 ```
 
@@ -37,7 +36,7 @@ java -jar build/libs/TaterPhysics-1.0.0-all.jar
 ## Manual Installation
 
 ### Prerequisites
-- **Java 11 or later** (JDK - must include javac compiler)
+- **Java 21 or later** (JDK - must include javac compiler)
 - **No additional dependencies required**
 
 ### Step 1: Install Java
@@ -63,7 +62,6 @@ Navigate to the project directory and run the setup script:
 
 **On Linux/macOS:**
 ```bash
-chmod +x ./setup.sh
 ./setup.sh
 ```
 
@@ -130,7 +128,7 @@ java -jar build/libs/TaterPhysics-1.0.0-all.jar
 
 | Requirement | Minimum | Recommended |
 |---|---|---|
-| Java Version | 11 | 11 or later |
+| Java Version | 21 | 21 or later |
 | RAM | 256 MB | 512 MB+ |
 | Display | 1200x1000 | 1920x1080+ |
 | OS | Windows 7+ / macOS 10.12+ / Linux | Modern versions |
@@ -142,9 +140,9 @@ java -jar build/libs/TaterPhysics-1.0.0-all.jar
 If you want to modify the source code:
 
 1. Open the project in an IDE (IntelliJ IDEA, Eclipse, VS Code)
-2. Ensure Java SDK 11+ is configured
-3. Gradle will handle compilation and resource management
-4. The main entry point is `src/Main.java`
+2. Ensure Java SDK 21+ is configured
+3. The main entry point is `src/Main.java`
+4. The build scripts (`setup.sh` / `setup.bat`) use javac to compile
 
 ---
 
