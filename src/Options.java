@@ -72,4 +72,8 @@ public class Options {
             public static final boolean drawMainContactPoint = true;
         }
     }
+
+    public static class Vec {
+        public static final boolean debug = false;
+    }
 }

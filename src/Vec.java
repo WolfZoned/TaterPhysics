@@ -136,8 +136,7 @@ public class Vec {
         if (length > 0) {
             return new Vec(result.x / length, result.y / length);
         }
-        IO.println("Warning: zero length perpendicular bisector direction vector.");
-        IO.println(length);
+        if (Options.Vec.debug) { IO.println("Warning: zero length perpendicular bisector direction vector."); }
         return null; // Return to protect against division by zero
     }
 

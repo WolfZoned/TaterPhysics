@@ -1,6 +1,26 @@
 # TaterPhysics
 A 2D impulse based physics engine for Java.
 
+## 🚀 Quick Start
+
+The easiest way to run the demo:
+
+**Linux/macOS:**
+```bash
+chmod +x ./run.sh && ./run.sh
+```
+
+**Windows:**
+```batch
+run.bat
+```
+
+Or manually: `java -jar build/libs/TaterPhysics-1.0.0-all.jar`
+
+See [INSTALL.md](INSTALL.md) for detailed installation instructions.
+
+---
+
 # Current Features
 Rendering\
 Basic interactions - Throwing shapes and stopping velocity\
