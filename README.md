@@ -7,7 +7,7 @@ The easiest way to run the demo:
 
 **Linux/macOS:**
 ```bash
-chmod +x ./run.sh && ./run.sh
+./run.sh
 ```
 
 **Windows:**
@@ -19,48 +19,52 @@ Or manually: `java -jar build/libs/TaterPhysics-1.0.0-all.jar`
 
 See [INSTALL.md](INSTALL.md) for detailed installation instructions.
 
+**Requirements:** Java 21 or later
+
 ---
 
-# Current Features
-Rendering\
-Basic interactions - Throwing shapes and stopping velocity\
-Collision resolution - GJK and EPA\
-Friction\
-Debug tools - Stop/slow step rate - Record and rewind frames
+## Current Features
+- Rendering
+- Basic interactions - Throwing shapes and stopping velocity
+- Collision resolution - GJK, EPA, and Impulses
+- Friction
+- Debug tools - Stop/slow step rate - Record and rewind frames
 
-# How to Use
-Press **R** to reset shapes\
-Drag shapes to move or throw them
+## How to Use
+- Press **R** to reset shapes
+- Drag shapes to move or throw them
+- Press the record button to begin to recording frames, then press the playback button to rewind frames
+  - Arrow keys control frames
+  - Stoping playback will rewind the engine's state back to that frame
+- Press **K** while not hovering a shape to stop all shape's velocities. If you hover a shape while pressing **K**, only that shape's velocity will be stopped.
+- Press **P** or the pause button to toggle a paused state
+- Press the shape button to create a new shape. 
+  - The two premade shapes are a square and circle
+  - Press the pencil button to draw a custom shape. Click to add points, then click the checkmark or press **ENTER** to finish the shape. Only convex shapes are supported
 
-Hold **Z** to record frames, then hold **M** to look through the frames\
---Arrow keys control frames\
---Hold **Z** until **M** is held, then **Z** can be released
+The blue square platform is angular static, and is only able to spin.
+The orange square is linear static, and is only able to move without rotation.
 
-Press **K** while not hovering a shape to stop all shape's velocities. If you hover a shape while pressing **K**, only that shape's velocity will be stopped.
+---
 
-The red platform beneath the objects is a giant square without gravity.
+## Needs Porting
+- A Customizable Joint System Allowing For:
+  - Fixed joints
+  - Pivot joints
+  - Wheel motor joints
+  - Stepped motor joints
+  - Rope joints
+  - Piston joints
+  - And more
+- Multiple interaction modes
+  - Drawing shapes with custom properties
+  - Creating custom joints between 2 objects
+  - Adding points to use for joints
+---
 
-# Needs Porting
-Circles
-
-A Customizable Joint System Allowing For:\
---Fixed joints\
---Pivot joints\
---Wheel motor joints\
---Stepped motor joints\
---Rope joints\
---Piston joints\
---And more
-
-Multiple interaction modes\
---Drawing shapes with custom properties\
---Creating custom joints between 2 objects\
---Moving shapes\
---Adding points to use for joints
-
-# Plans
+## Plans
 This is a port of a previous engine I made. Most of the existing features will probably be ported over before working on new ones.
 
-Planned Features\
---Object fusing\
---Correct handling of single point objects 
+**Planned Features:**
+- Object fusing
+- Correct handling of single point objects 
