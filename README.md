@@ -1,25 +1,19 @@
 # TaterPhysics
-A 2D impulse based physics engine for Java.
+A data-driven 2D impulse based physics engine for Java.
 
-## 🚀 Quick Start
+---
 
-The easiest way to run the demo:
+## How to run the release file (Java 21+)
 
-**Linux/macOS:**
-```bash
-./run.sh
-```
+**Linux/MacOS:** - "./run.sh"
 
-**Windows:**
-```batch
-run.bat
-```
+**Windows:** - "run.bat"
 
-Or manually: `java -jar build/libs/TaterPhysics-1.0.0-all.jar`
+**Manually with java:** - "java -jar build/libs/TaterPhysics-1.0.0-all.jar"
 
-See [INSTALL.md](INSTALL.md) for detailed installation instructions.
+(I have not tested on Windows and MacOS, but they should work)
 
-**Requirements:** Java 21 or later
+[INSTALL.md](INSTALL.md) has more in depth info
 
 ---
 
@@ -30,8 +24,13 @@ See [INSTALL.md](INSTALL.md) for detailed installation instructions.
 - Friction
 - Debug tools - Stop/slow step rate - Record and rewind frames
 
+---
+
 ## About
-This is a 2D Impulse physics engine. It uses published algorithms such as GJK and EPA for collision detection, and generates impulse vectors to apply corrective forces for resolving those collisions. I created this to learn Java after my previous platform was no longer a good fit.
+This is a 2D Impulse physics engine. It uses published algorithms like GJK and EPA for collision detection, and generates impulse vectors to apply corrective forces for resolving those collisions. I created this to learn Java after my previous platform was no longer a good fit.
+Check out the devlogs leading up to the first release on [Flavortown](https://flavortown.hackclub.com/projects/5129)
+
+---
 
 ## How to Use
 - Press **R** to reset shapes
@@ -41,9 +40,9 @@ This is a 2D Impulse physics engine. It uses published algorithms such as GJK an
   - Stoping playback will rewind the engine's state back to that frame
 - Press **K** while not hovering a shape to stop all shape's velocities. If you hover a shape while pressing **K**, only that shape's velocity will be stopped.
 - Press **P** or the pause button to toggle a paused state
-- Press the shape button to create a new shape. 
+- Press the shape button to create a new shape 
   - The two premade shapes are a square and circle
-  - Press the pencil button to draw a custom shape. Click to add points, then click the checkmark or press **ENTER** to finish the shape. Only convex shapes are supported
+  - Press the pencil button to draw a custom shape. Click to add points, then click the checkmark or press **ENTER** to finish the shape. Only convex shapes are supported.
 
 The blue square platform is angular static, and is only able to spin.
 The orange square is linear static, and is only able to move without rotation.
@@ -65,7 +64,7 @@ The orange square is linear static, and is only able to move without rotation.
   - Adding points to use for joints
 ---
 
-## Plans
+## Future Plans
 This is a port of a previous engine I made. Most of the existing features will probably be ported over before working on new ones.
 
 **Planned Features:**
