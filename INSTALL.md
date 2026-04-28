@@ -91,6 +91,10 @@ java -jar build/libs/TaterPhysics-1.0.0-all.jar
 
 ---
 
+### Build to EXE using launch4j
+launch4j launch4j-config.xml
+
+
 ## Troubleshooting
 
 ### "Java command not found"

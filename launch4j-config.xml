@@ -1,0 +1,24 @@
+<launch4jConfig>
+  <dontWrapJar>false</dontWrapJar>
+  <headerType>gui</headerType>
+  <jar>build/libs/TaterPhysics-1.0.0-all.jar</jar>
+  <outfile>build/TaterPhysics.exe</outfile>
+  <errTitle>TaterPhysics</errTitle>
+  <cmdLine></cmdLine>
+  <chdir>.</chdir>
+  <priority>normal</priority>
+  <downloadUrl>https://adoptium.net/</downloadUrl>
+  <supportUrl></supportUrl>
+  <jre>
+    <path>java</path>
+    <minVersion>21.0.0</minVersion>
+    <maxVersion></maxVersion>
+    <jdkPreference>preferJre</jdkPreference>
+    <runtimeBits>auto</runtimeBits>
+  </jre>
+  <messages>
+    <startupErr>An error occurred while starting the application.</startupErr>
+    <jreNotFoundErr>Java was not found on this system.</jreNotFoundErr>
+  </messages>
+</launch4jConfig>
+
