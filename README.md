@@ -69,4 +69,7 @@ This is a port of a previous engine I made. Most of the existing features will p
 
 **Planned Features:**
 - Object fusing
-- Correct handling of single point objects 
+- Correct handling of single point objects
+
+**AI Disclaimer**
+I use GitHub Copilot code completion and when stuck occasionally use Claude to help debug problems. AI also helped create the INSTALL.md file and compile/run scripts.
