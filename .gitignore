@@ -12,9 +12,6 @@ out/
 
 ### Build Artifacts ###
 /build/*
-!/build/libs/
-/build/libs/*
-!/build/libs/TaterPhysics-1.0.0-all.jar
 bin/
 *.class
 
@@ -24,3 +21,6 @@ bin/
 ._*
 .Spotlight-V100
 .Trashes
+
+### Gradle ###
+.gradle/

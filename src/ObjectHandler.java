@@ -311,7 +311,7 @@ public class ObjectHandler {
             perpDir = Vec.dirOfPerpendicularBisector(simplexList.get(0), simplexList.get(1), true);
         }
         if (!checkGJKPoint(objA, objB, perpDir, simplexList, 2, "insert third check style here", 0.0)) {
-            System.out.println("failed on third point");
+            if (Options.GJK.debug) { System.out.println("failed on third point"); }
             return false; //the original had the simplexes reversed and then negated it, so i just changed the order of subtraction here - ok this may still be backwards
         }
 
@@ -665,8 +665,10 @@ public class ObjectHandler {
                  }
              }
              contact = Vec.normDistPoint(objAPos, objB.rel[minDistLineIndex1].add(objBPos), objB.rel[(minDistLineIndex1+1)%objB.rel.length].add(objBPos), true, minContactNormDist);
-             System.out.println(contact.toString());
-             System.out.println("Contact Points Circle 1");
+             if (Options.ContactPoints.debug) {
+                 System.out.println(contact.toString());
+                 System.out.println("Contact Points Circle 1");
+             }
          } else if (objA.type.equals("polygon") && objB.type.equals("circle")) {
              double minContactNormDist = 0.0;
              for  (int i = 0; i < objA.rel.length; i++) {

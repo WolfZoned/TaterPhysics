@@ -18,18 +18,20 @@ fi
 echo "Starting TaterPhysics Demo..."
 
 # Find the built JAR file
-JAR_FILE="build/libs/TaterPhysics-1.0.0-all.jar"
+JAR_FILE="build/TaterPhysics.jar"
 
 if [ ! -f "$JAR_FILE" ]; then
     echo "JAR file not found at $JAR_FILE"
     echo "Building project first..."
 
-    # Check if setup script exists
-    if [ -f "./setup.sh" ]; then
-        bash ./setup.sh
+    # Check if build script exists
+    if [ -f "./build.sh" ]; then
+        bash ./build.sh << EOF
+1
+EOF
     else
-        echo "Error: setup.sh not found. Cannot build project automatically."
-        echo "Please run: javac -d bin src/*.java && jar cfm build/libs/TaterPhysics-1.0.0-all.jar META-INF/MANIFEST.MF -C bin ."
+        echo "Error: build.sh not found. Cannot build project automatically."
+        echo "Please run ./build.sh to build the project."
         exit 1
     fi
 fi

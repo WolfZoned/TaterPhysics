@@ -20,6 +20,7 @@ public class Options {
         public static Color[] list = {
                 RED, DARK_RED, DARK_GREEN, LIGHT_GREEN, BLUE, YELLOW, MAGENTA, CYAN, GRAY, ORANGE, PURPLE, SKY, VIOLET
         };
+
         public static Color randomColor() {
             return list[ThreadLocalRandom.current().nextInt(0, list.length)];
         }
@@ -28,6 +29,7 @@ public class Options {
     public static class Object {
         public static final boolean logCreation = false;
     }
+
     public static class AABB {
         public static final boolean render = false;
     }
@@ -74,6 +76,10 @@ public class Options {
     }
 
     public static class Vec {
+        public static final boolean debug = false;
+    }
+
+    public static class ScreenElements {
         public static final boolean debug = false;
     }
 }

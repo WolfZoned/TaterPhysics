@@ -3,7 +3,7 @@
 <launch4jConfig>
   <dontWrapJar>false</dontWrapJar>
   <headerType>gui</headerType>
-  <jar>build/libs/TaterPhysics-1.0.0-all.jar</jar>
+  <jar>build/TaterPhysics.jar</jar>
   <outfile>build/TaterPhysics.exe</outfile>
   <errTitle>TaterPhysics</errTitle>
   <cmdLine></cmdLine>

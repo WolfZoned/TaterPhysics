@@ -15,16 +15,16 @@ echo Starting TaterPhysics Demo...
 echo.
 
 REM Find the built JAR file
-set "JAR_FILE=build\libs\TaterPhysics-1.0.0-all.jar"
+set "JAR_FILE=build\TaterPhysics.jar"
 
 if not exist "%JAR_FILE%" (
     echo JAR file not found at %JAR_FILE%
     echo Building project first...
 
-    if exist "setup.bat" (
-        call setup.bat
+    if exist "build.bat" (
+        (echo 1) | call build.bat
     ) else (
-        echo Error: setup.bat not found. Cannot build project automatically.
+        echo Error: build.bat not found. Cannot build project automatically.
         pause
         exit /b 1
     )

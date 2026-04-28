@@ -4,13 +4,22 @@
 
 **Requirements:** Java 25+ (JDK from https://adoptium.net/)
 
-**Compile:**
+**Build menu (interactive):**
 ```bash
-./setup.sh        # Linux/macOS
-setup.bat         # Windows
+./build.sh        # Linux/macOS
+build.bat         # Windows
 ```
 
-Output: `build/libs/TaterPhysics-1.0.0-all.jar`
+Choose from:
+- JAR only
+- Lightweight EXE (requires Java 25 on user machine)
+- Bundled EXE (self-contained)
+- All of the above
+
+**Outputs:**
+- JAR: `build/TaterPhysics.jar`
+- EXE: `build/TaterPhysics.exe`
+- Bundled ZIP: `build/TaterPhysics-exe-bundled.zip`
 
 ---
 
@@ -24,32 +33,19 @@ run.bat           # Windows
 
 **Direct:**
 ```bash
-java -jar build/libs/TaterPhysics-1.0.0-all.jar
+java -jar build/TaterPhysics.jar
 ```
 
 ---
 
-## Windows EXE
-
-**Lightweight (~113 KB)** - needs Java 25:
-```bash
-launch4j launch4j-config.xml
-```
-
-**Self-Contained (~170 MB)** - no Java needed:
-1. Download Java 25 JRE from https://adoptium.net/ (Windows x64, .zip)
-2. Extract into `TaterPhysics/jre/`
-3. `launch4j launch4j-config-bundled.xml`
-
----
 
 ## Troubleshooting
 
 - "Java not found" → Install JDK from https://adoptium.net/
 - "javac not found" → Install JDK (not JRE)
-- "Permission denied" → `chmod +x ./setup.sh ./run.sh`
-- "JAR not found" → Run `./setup.sh` first
-- Low FPS → `java -Xmx1024m -jar build/libs/TaterPhysics-1.0.0-all.jar`
+- "Permission denied" → `chmod +x ./compile.sh ./run.sh`
+- "JAR not found" → Run `./compile.sh` first
+- Low FPS → `java -Xmx1024m -jar build/TaterPhysics.jar`
 - launch4j: jre not found → Check `jre/bin/java.exe` exists
 
 ---

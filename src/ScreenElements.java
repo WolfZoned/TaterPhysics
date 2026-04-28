@@ -59,7 +59,7 @@ public class ScreenElements {
                 //create custom shape with polygonPoints as points
                 Vec[] pointsArray = drawnPoints.toArray(new Vec[0]);
                 if (!TaterMath.isConvex(pointsArray)) {
-                    System.out.println("Error: Drawn polygon must be convex.");
+                    if (Options.ScreenElements.debug) { System.out.println("Error: Drawn polygon must be convex."); }
                     drawnPoints.clear();
                     return;
                 }
@@ -74,7 +74,7 @@ public class ScreenElements {
                 Stage.objects.add(Object.createCustom(Options.colors.randomColor(), stageSize.div(2).x, stageSize.div(2).y, 0, pointsArray, new Vec(0, 0.3), false, false));
                 drawnPoints.clear();
             } else {
-                System.out.println("Error: Invalid shape type");
+                if (Options.ScreenElements.debug) { System.out.println("Error: Invalid shape type"); }
             }
         }
     }
@@ -130,7 +130,7 @@ public class ScreenElements {
 
         public Button(String imageName, Vec pos, int size, boolean rendered, boolean leftAligned, boolean topAligned) {
             this.rendered = rendered;
-            this.image = new ImageIcon("src/images/" + imageName + ".png").getImage();
+            this.image = new ImageIcon(getClass().getResource("/images/" + imageName + ".png")).getImage();
             this.pos = pos;
             this.size = new Vec(this.image.getWidth(null) * size, this.image.getHeight(null) * size);
             this.leftAligned = leftAligned;
@@ -142,7 +142,7 @@ public class ScreenElements {
 
         public Button(String imageName, Vec pos, int size, boolean rendered) {
             this.rendered = rendered;
-            this.image = new ImageIcon("src/images/" + imageName + ".png").getImage();
+            this.image = new ImageIcon(getClass().getResource("/images/" + imageName + ".png")).getImage();
             this.pos = pos;
             this.size = new Vec(this.image.getWidth(null) * size, this.image.getHeight(null) * size);
             this.leftAligned = false;
