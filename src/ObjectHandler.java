@@ -279,8 +279,8 @@ public class ObjectHandler {
 
     private static boolean GJKCollision(Object objA, Object objB, ArrayList<Vec> simplexList) { //make sure all shapes are clockwise for now
         if (Options.GJK.genAndDisplayAllOutsidePoints) {generateAndDisplayAllOutsidePoints(objA, objB);}
-        if (Options.GJK.debug) {IO.println("");}
-        if (Options.GJK.debug) {IO.println("New GJK Collision Check");}
+        if (Options.GJK.debug) {System.out.println("");}
+        if (Options.GJK.debug) {System.out.println("New GJK Collision Check");}
         simplexList.clear();
         simplexList.add(null);
         simplexList.add(null);
@@ -291,11 +291,11 @@ public class ObjectHandler {
         }
         checkGJKPoint(objA, objB, direction, simplexList, 0, "no return", 0.0);
         if (!isFiniteVec(simplexList.get(0)) || Vec.dot(simplexList.get(0), direction) <= 0) {
-            if (Options.GJK.debug) {IO.println("failed on first point");}
+            if (Options.GJK.debug) {System.out.println("failed on first point");}
             return false;
         }
         if (!checkGJKPoint(objA, objB, simplexList.get(0).mul(-1), simplexList, 1, "insert second check style here", 0.0)) {
-            if (Options.GJK.debug) {IO.println("failed on second point");}
+            if (Options.GJK.debug) {System.out.println("failed on second point");}
             return false;
         }
         // Calculate perpendicular direction towards origin
@@ -311,7 +311,7 @@ public class ObjectHandler {
             perpDir = Vec.dirOfPerpendicularBisector(simplexList.get(0), simplexList.get(1), true);
         }
         if (!checkGJKPoint(objA, objB, perpDir, simplexList, 2, "insert third check style here", 0.0)) {
-            IO.println("failed on third point");
+            System.out.println("failed on third point");
             return false; //the original had the simplexes reversed and then negated it, so i just changed the order of subtraction here - ok this may still be backwards
         }
 
@@ -327,34 +327,34 @@ public class ObjectHandler {
         for (int i = 0; i < 20; i++) {
             if (Vec.isPointRightOfLine(new Vec(0, 0), simplexList.get(2), simplexList.get(0), false) == Vec.isPointRightOfLine(simplexList.get(1), simplexList.get(2), simplexList.get(0), false)) {
                 check1Passed = true;
-                if (Options.GJK.debug) {IO.println("check 1 passed");}
+                if (Options.GJK.debug) {System.out.println("check 1 passed");}
             } else {
                 check1Passed = false;
-                if (Options.GJK.debug) {IO.println("check 1 failed");}
+                if (Options.GJK.debug) {System.out.println("check 1 failed");}
                 if (!checkGJKPoint(objA, objB, Vec.dirOfPerpendicularBisector(simplexList.get(2), simplexList.get(0)), simplexList, 1, "insert third check style here", 0.0)) {
-                    if (Options.GJK.debug) {IO.println("failed on loop check 1");}
+                    if (Options.GJK.debug) {System.out.println("failed on loop check 1");}
                     return false;
                 }
             }
             if (Vec.isPointRightOfLine(new Vec(0, 0), simplexList.get(0), simplexList.get(1), false) == Vec.isPointRightOfLine(simplexList.get(2), simplexList.get(0), simplexList.get(1), false)) {
                 check2Passed = true;
-                if (Options.GJK.debug) {IO.println("check 2 passed");}
+                if (Options.GJK.debug) {System.out.println("check 2 passed");}
             } else {
                 check2Passed = false;
-                if (Options.GJK.debug) {IO.println("check 2 failed");}
+                if (Options.GJK.debug) {System.out.println("check 2 failed");}
                 if (!checkGJKPoint(objA, objB, Vec.dirOfPerpendicularBisector(simplexList.get(0), simplexList.get(1)), simplexList, 2, "insert third check style here", 0.0)) {
-                    if (Options.GJK.debug) {IO.println("failed on loop check 2");}
+                    if (Options.GJK.debug) {System.out.println("failed on loop check 2");}
                     return false;
                 }
             }
             if (Vec.isPointRightOfLine(new Vec(0, 0), simplexList.get(1), simplexList.get(2), false) == Vec.isPointRightOfLine(simplexList.get(0), simplexList.get(1), simplexList.get(2), false)) {
                 check3Passed = true;
-                if (Options.GJK.debug) {IO.println("check 3 passed");}
+                if (Options.GJK.debug) {System.out.println("check 3 passed");}
             } else {
                 check3Passed = false;
-                if (Options.GJK.debug) {IO.println("check 3 failed");}
+                if (Options.GJK.debug) {System.out.println("check 3 failed");}
                 if (!checkGJKPoint(objA, objB, Vec.dirOfPerpendicularBisector(simplexList.get(1), simplexList.get(2)), simplexList, 0, "insert third check style here", 0.0)) {
-                    if (Options.GJK.debug) {IO.println("failed on loop check 3");}
+                    if (Options.GJK.debug) {System.out.println("failed on loop check 3");}
                     return false;
                 }
             }
@@ -362,7 +362,7 @@ public class ObjectHandler {
                 if (!originInsideTriangle(simplexList.get(0), simplexList.get(1), simplexList.get(2))) {
                     continue;
                 }
-                if (Options.GJK.debug) {IO.println("Successful collision detected");}
+                if (Options.GJK.debug) {System.out.println("Successful collision detected");}
                 if (Options.GJK.render.drawSuccessfulSimplex) {
                     DrawSimplex(simplexList, Options.GJK.render.successfulSimplexColor, 2.5f);
                 }
@@ -370,13 +370,13 @@ public class ObjectHandler {
             }
         }
         if (Options.GJK.debug) {
-            IO.println("gjk iteration expired, listing final check pass/fails");
+            System.out.println("gjk iteration expired, listing final check pass/fails");
         if (Vec.isPointRightOfLine(new Vec(0, 0), simplexList.get(2), simplexList.get(0), false) == Vec.isPointRightOfLine(simplexList.get(1), simplexList.get(2), simplexList.get(0), false)) {
-            IO.println("check 1 passed"); } else { IO.println("check 1 failed");}
+            System.out.println("check 1 passed"); } else { System.out.println("check 1 failed");}
         if (Vec.isPointRightOfLine(new Vec(0, 0), simplexList.get(0), simplexList.get(1), false) == Vec.isPointRightOfLine(simplexList.get(2), simplexList.get(0), simplexList.get(1), false)) {
-            IO.println("check 2 passed"); } else {  IO.println("check 2 failed");}
+            System.out.println("check 2 passed"); } else {  System.out.println("check 2 failed");}
         if (Vec.isPointRightOfLine(new Vec(0, 0), simplexList.get(1), simplexList.get(2), false) == Vec.isPointRightOfLine(simplexList.get(0), simplexList.get(1), simplexList.get(2), false)) {
-            IO.println("check 3 passed"); } else { IO.println("check 3 failed");}
+            System.out.println("check 3 passed"); } else { System.out.println("check 3 failed");}
         }
         if (Options.GJK.render.drawFailedSimplex) {
             DrawSimplex(simplexList, Options.GJK.render.failedSimplexColor, 2.5f);
@@ -387,15 +387,15 @@ public class ObjectHandler {
     private static Vec EPACollision(Object objA, Object objB, ArrayList<Vec> simplexList) {
         //do a better job of calculating clockwise/counterclockwise inside gjk - determine when and if it switches
         //counterpoint: check if they are clockwise now? don't touch whats not broken (at least i don't think it is???)
-        //IO.println("");
-        if (Options.EPA.debug) {IO.println("Starting EPA");}
+        //System.out.println("");
+        if (Options.EPA.debug) {System.out.println("Starting EPA");}
         int minDistLineIndex;
         double minDist;
         Vec minDistVec;
         Vec minDistLineStartingVec;
         Vec minDistLineEndingVec;
         boolean clockwise = TaterMath.isClockwise(simplexList);
-        if (Options.GJK.debug) {IO.println("Original clockwise: " + clockwise + "but is now clockwise");}
+        if (Options.GJK.debug) {System.out.println("Original clockwise: " + clockwise + "but is now clockwise");}
         if (!clockwise) {
             Vec[] clockwiseVecs = new Vec[simplexList.size()];
             for (int i = 0; i < clockwiseVecs.length; i++) {
@@ -411,7 +411,7 @@ public class ObjectHandler {
         Vec newVec;
 
         for  (int i = 0; i < EPAAttempts; i++) {
-            if (Options.GJK.debug) {IO.println("New Attempt");}
+            if (Options.GJK.debug) {System.out.println("New Attempt");}
             minDist = Double.MAX_VALUE;
             minDistLineIndex = -1;
             minDistVec = null;
@@ -436,7 +436,7 @@ public class ObjectHandler {
             minDistLineStartingVec = simplexList.get(minDistLineIndex);
             minDistLineEndingVec = simplexList.get((minDistLineIndex + 1) % simplexList.size());
             if (Options.EPA.render.drawMinDistVec) { Stage.drawn.addCenteredPoint(new Vec.coloredVec(minDistVec, new Color(255, 255, 0, 255))); }
-            if (Options.EPA.debug) {IO.println("Closest Line: " + minDistLineStartingVec.x + " " + minDistLineStartingVec.y + "      " + minDistLineEndingVec.x + " " + minDistLineEndingVec.y);}
+            if (Options.EPA.debug) {System.out.println("Closest Line: " + minDistLineStartingVec.x + " " + minDistLineStartingVec.y + "      " + minDistLineEndingVec.x + " " + minDistLineEndingVec.y);}
             double minDistLenSq = Vec.dot(minDistVec, minDistVec);
             if (minDistLenSq <= EPAMinNormalLenSquared) {
                 if (Options.EPA.render.drawFailedSimplex) {
@@ -577,10 +577,10 @@ public class ObjectHandler {
             if (!isFiniteVec(dirNormalized)) {
                 return null;
             }
-            pointB = objB.pos.add(dirNormalized.mul(objB.radius));
-        }
-        if (Options.GJK.debug) {IO.println("DIRECTION: " + direction + "     New Vec: " + Vec.sub(pointB, pointA));}
-        return(Vec.sub(pointB, pointA)); //since the list is already initialized with nulls, we can just replace existing points
+             pointB = objB.pos.add(dirNormalized.mul(objB.radius));
+         }
+         if (Options.GJK.debug) {System.out.println("DIRECTION: " + direction + "     New Vec: " + Vec.sub(pointB, pointA));}
+         return(Vec.sub(pointB, pointA)); //since the list is already initialized with nulls, we can just replace existing points
     }
 
     private static Vec findContactPoints(Object objA, Object objB, Vec objAPos, Vec objBPos) {
@@ -600,9 +600,9 @@ public class ObjectHandler {
         Vec contact1 = null;
         Vec contact2 = null;
         if (Options.ContactPoints.debug) {
-            IO.println("");
-            IO.println("");
-            IO.println("Contact Points round 1:");
+            System.out.println("");
+            System.out.println("");
+            System.out.println("Contact Points round 1:");
         }
         if (objA.type.equals("polygon") && objB.type.equals("polygon")) {
             for  (int i = 0; i < objB.rel.length; i++) {
@@ -615,106 +615,106 @@ public class ObjectHandler {
                         shapeIndex2 = -1;
                         minDistPointIndex1 = j;
                         minDistLineIndex1 = i;
-                        shapeIndex1 = 2;
-                        tempMinDist = contactDist;
-                        if (Options.ContactPoints.debug) { IO.println("New min 1 found:      MinPointIndex " + minDistPointIndex1 + "   MinLineIndex " + minDistLineIndex1 + "   MinDist " + tempMinDist); }
-                    } else if ((contactDist - tolerance) < tempMinDist && minDistPointIndex1 != j && minDistPointIndex2 != j) {
-                        minDistPointIndex2 = j;
-                        minDistLineIndex2 = i;
-                        shapeIndex2 = 2;
-                        if (Options.ContactPoints.debug) { IO.println("New min 2 found:      MinPointIndex " + minDistPointIndex2 + "   MinLineIndex " + minDistLineIndex2 + "   MinDist " + tempMinDist); }
-                    }
-                }
-            }
-            if (Options.ContactPoints.debug) { IO.println(""); }
-            if (Options.ContactPoints.debug) { IO.println("Contact Points round 2:"); }
-            for  (int i = 0; i < objA.rel.length; i++) {
-                for (int j = 0; j < objB.rel.length; j++) {
-                    contactNormDist = Vec.normDist(objB.rel[j].add(objBPos), objA.rel[i].add(objAPos), objA.rel[(i+1)%objA.rel.length].add(objAPos),true);
-                    contactDist = Vec.distToNormDistPoint(objB.rel[j].add(objBPos), objA.rel[i].add(objAPos), objA.rel[(i+1)%objA.rel.length].add(objAPos), true, contactNormDist);
+                         shapeIndex1 = 2;
+                         tempMinDist = contactDist;
+                         if (Options.ContactPoints.debug) { System.out.println("New min 1 found:      MinPointIndex " + minDistPointIndex1 + "   MinLineIndex " + minDistLineIndex1 + "   MinDist " + tempMinDist); }
+                     } else if ((contactDist - tolerance) < tempMinDist && minDistPointIndex1 != j && minDistPointIndex2 != j) {
+                         minDistPointIndex2 = j;
+                         minDistLineIndex2 = i;
+                         shapeIndex2 = 2;
+                         if (Options.ContactPoints.debug) { System.out.println("New min 2 found:      MinPointIndex " + minDistPointIndex2 + "   MinLineIndex " + minDistLineIndex2 + "   MinDist " + tempMinDist); }
+                     }
+                 }
+             }
+             if (Options.ContactPoints.debug) { System.out.println(""); }
+             if (Options.ContactPoints.debug) { System.out.println("Contact Points round 2:"); }
+             for  (int i = 0; i < objA.rel.length; i++) {
+                 for (int j = 0; j < objB.rel.length; j++) {
+                     contactNormDist = Vec.normDist(objB.rel[j].add(objBPos), objA.rel[i].add(objAPos), objA.rel[(i+1)%objA.rel.length].add(objAPos),true);
+                     contactDist = Vec.distToNormDistPoint(objB.rel[j].add(objBPos), objA.rel[i].add(objAPos), objA.rel[(i+1)%objA.rel.length].add(objAPos), true, contactNormDist);
 
-                    if ((contactDist + tolerance) < tempMinDist) {
-                        minDistPointIndex2 = -1;
-                        shapeIndex2 = -1;
-                        minDistPointIndex1 = j;
-                        minDistLineIndex1 = i;
-                        shapeIndex1 = 1;
-                        tempMinDist = contactDist;
-                        if (Options.ContactPoints.debug) { IO.println("New min 1 found:      MinPointIndex " + minDistPointIndex1 + "   MinLineIndex " + minDistLineIndex1 + "   MinDist " + tempMinDist); }
-                    } else if ((contactDist - tolerance) < tempMinDist && minDistPointIndex1 != j && minDistPointIndex2 != j) {
-                        minDistPointIndex2 = j;
-                        minDistLineIndex2 = i;
-                        shapeIndex2 = 1;
-                        if (Options.ContactPoints.debug) { IO.println("New min 2 found:      MinPointIndex " + minDistPointIndex2 + "   MinLineIndex " + minDistLineIndex2 + "   MinDist " + tempMinDist); }
-                    }
-                }
-            }
-        } else if (objA.type.equals("circle") && objB.type.equals("polygon")) {
-            double minContactNormDist = 0.0;
-            for  (int i = 0; i < objB.rel.length; i++) {
-                contactNormDist = Vec.normDist(objAPos, objB.rel[i].add(objBPos), objB.rel[(i+1)%objB.rel.length].add(objBPos),true);
-                contactDist = Vec.distToNormDistPoint(objAPos, objB.rel[i].add(objBPos), objB.rel[(i+1)%objB.rel.length].add(objBPos), true, contactNormDist);
+                     if ((contactDist + tolerance) < tempMinDist) {
+                         minDistPointIndex2 = -1;
+                         shapeIndex2 = -1;
+                         minDistPointIndex1 = j;
+                         minDistLineIndex1 = i;
+                         shapeIndex1 = 1;
+                         tempMinDist = contactDist;
+                         if (Options.ContactPoints.debug) { System.out.println("New min 1 found:      MinPointIndex " + minDistPointIndex1 + "   MinLineIndex " + minDistLineIndex1 + "   MinDist " + tempMinDist); }
+                     } else if ((contactDist - tolerance) < tempMinDist && minDistPointIndex1 != j && minDistPointIndex2 != j) {
+                         minDistPointIndex2 = j;
+                         minDistLineIndex2 = i;
+                         shapeIndex2 = 1;
+                         if (Options.ContactPoints.debug) { System.out.println("New min 2 found:      MinPointIndex " + minDistPointIndex2 + "   MinLineIndex " + minDistLineIndex2 + "   MinDist " + tempMinDist); }
+                     }
+                 }
+             }
+         } else if (objA.type.equals("circle") && objB.type.equals("polygon")) {
+             double minContactNormDist = 0.0;
+             for  (int i = 0; i < objB.rel.length; i++) {
+                 contactNormDist = Vec.normDist(objAPos, objB.rel[i].add(objBPos), objB.rel[(i+1)%objB.rel.length].add(objBPos),true);
+                 contactDist = Vec.distToNormDistPoint(objAPos, objB.rel[i].add(objBPos), objB.rel[(i+1)%objB.rel.length].add(objBPos), true, contactNormDist);
 
-                if ((contactDist + tolerance) < tempMinDist) {
-                    minDistLineIndex1 = i;
-                    shapeIndex1 = 2;
-                    minContactNormDist = contactNormDist;
-                    //finds furthest point on circle in directrion of
-                    tempMinDist = contactDist;
-                    if (Options.ContactPoints.debug) { IO.println("New min found:      MinPointIndex " + minDistPointIndex1 + "   MinLineIndex " + minDistLineIndex1 + "   MinDist " + tempMinDist); }
-                }
-            }
-            contact = Vec.normDistPoint(objAPos, objB.rel[minDistLineIndex1].add(objBPos), objB.rel[(minDistLineIndex1+1)%objB.rel.length].add(objBPos), true, minContactNormDist);
-            IO.println(contact.toString());
-            IO.println("Contact Points Circle 1");
-        } else if (objA.type.equals("polygon") && objB.type.equals("circle")) {
-            double minContactNormDist = 0.0;
-            for  (int i = 0; i < objA.rel.length; i++) {
-                contactNormDist = Vec.normDist(objBPos, objA.rel[i].add(objAPos), objA.rel[(i+1)%objA.rel.length].add(objAPos),true);
-                contactDist = Vec.distToNormDistPoint(objBPos, objA.rel[i].add(objAPos), objA.rel[(i+1)%objA.rel.length].add(objAPos), true, contactNormDist);
+                 if ((contactDist + tolerance) < tempMinDist) {
+                     minDistLineIndex1 = i;
+                     shapeIndex1 = 2;
+                     minContactNormDist = contactNormDist;
+                     //finds furthest point on circle in directrion of
+                     tempMinDist = contactDist;
+                     if (Options.ContactPoints.debug) { System.out.println("New min found:      MinPointIndex " + minDistPointIndex1 + "   MinLineIndex " + minDistLineIndex1 + "   MinDist " + tempMinDist); }
+                 }
+             }
+             contact = Vec.normDistPoint(objAPos, objB.rel[minDistLineIndex1].add(objBPos), objB.rel[(minDistLineIndex1+1)%objB.rel.length].add(objBPos), true, minContactNormDist);
+             System.out.println(contact.toString());
+             System.out.println("Contact Points Circle 1");
+         } else if (objA.type.equals("polygon") && objB.type.equals("circle")) {
+             double minContactNormDist = 0.0;
+             for  (int i = 0; i < objA.rel.length; i++) {
+                 contactNormDist = Vec.normDist(objBPos, objA.rel[i].add(objAPos), objA.rel[(i+1)%objA.rel.length].add(objAPos),true);
+                 contactDist = Vec.distToNormDistPoint(objBPos, objA.rel[i].add(objAPos), objA.rel[(i+1)%objA.rel.length].add(objAPos), true, contactNormDist);
 
-                if ((contactDist + tolerance) < tempMinDist) {
-                    minDistLineIndex1 = i;
-                    shapeIndex1 = 1;
-                    minContactNormDist = contactNormDist;
-                    tempMinDist = contactDist;
-                    if (Options.ContactPoints.debug) { IO.println("New min found:      MinPointIndex " + minDistPointIndex1 + "   MinLineIndex " + minDistLineIndex1 + "   MinDist " + tempMinDist); }
-                }
-            }
-            contact = Vec.normDistPoint(objBPos, objA.rel[minDistLineIndex1].add(objAPos), objA.rel[(minDistLineIndex1+1)%objA.rel.length].add(objAPos), true, minContactNormDist);
+                 if ((contactDist + tolerance) < tempMinDist) {
+                     minDistLineIndex1 = i;
+                     shapeIndex1 = 1;
+                     minContactNormDist = contactNormDist;
+                     tempMinDist = contactDist;
+                     if (Options.ContactPoints.debug) { System.out.println("New min found:      MinPointIndex " + minDistPointIndex1 + "   MinLineIndex " + minDistLineIndex1 + "   MinDist " + tempMinDist); }
+                 }
+             }
+             contact = Vec.normDistPoint(objBPos, objA.rel[minDistLineIndex1].add(objAPos), objA.rel[(minDistLineIndex1+1)%objA.rel.length].add(objAPos), true, minContactNormDist);
 
-            if (Options.ContactPoints.debug) {
-                IO.println(contact.toString());
-                IO.println("Contact Points Circle 2");
-            }
-        }
-        if (Options.ContactPoints.debug) {
-            IO.println("");
-            IO.println("Shape A index: " + objA.ID + "   Shape B index: " + objB.ID);
-            IO.println("MinDistPointIndex1: " + minDistPointIndex1 + "   ShapeIndex1: " + shapeIndex1 + "   MinDistPointIndex2: " + minDistPointIndex2 + "   ShapeIndex2: " + shapeIndex2);
-        }
+             if (Options.ContactPoints.debug) {
+                 System.out.println(contact.toString());
+                 System.out.println("Contact Points Circle 2");
+             }
+         }
+         if (Options.ContactPoints.debug) {
+             System.out.println("");
+             System.out.println("Shape A index: " + objA.ID + "   Shape B index: " + objB.ID);
+             System.out.println("MinDistPointIndex1: " + minDistPointIndex1 + "   ShapeIndex1: " + shapeIndex1 + "   MinDistPointIndex2: " + minDistPointIndex2 + "   ShapeIndex2: " + shapeIndex2);
+         }
 
-        if (objA.type.equals("polygon") && objB.type.equals("polygon")) {
-            if (shapeIndex1 == 1) {
-                contact1 = objB.rel[minDistPointIndex1].add(objBPos);
-            } else if (shapeIndex1 == 2) {
-                contact1 = objA.rel[minDistPointIndex1].add(objAPos);
-            } else {
-                if (Options.ContactPoints.debug) { IO.println("ERROR: No contact point found"); }
-                return null;
-            }
-            if (shapeIndex2 == 1) {
-                contact2 = objB.rel[minDistPointIndex2].add(objBPos);
-            } else if (shapeIndex2 == 2) {
-                contact2 = objA.rel[minDistPointIndex2].add(objAPos);
-            }
-            if (shapeIndex2 == -1) {
-                contact = contact1;
-            } else {
-                contact = Vec.div(contact1.add(contact2),2);
-            }
-        }
-        if (Options.ContactPoints.debug) { IO.println("Shape A Type: " + objA.type + "   Shape B Type: " + objB.type); }
+         if (objA.type.equals("polygon") && objB.type.equals("polygon")) {
+             if (shapeIndex1 == 1) {
+                 contact1 = objB.rel[minDistPointIndex1].add(objBPos);
+             } else if (shapeIndex1 == 2) {
+                 contact1 = objA.rel[minDistPointIndex1].add(objAPos);
+             } else {
+                 if (Options.ContactPoints.debug) { System.out.println("ERROR: No contact point found"); }
+                 return null;
+             }
+             if (shapeIndex2 == 1) {
+                 contact2 = objB.rel[minDistPointIndex2].add(objBPos);
+             } else if (shapeIndex2 == 2) {
+                 contact2 = objA.rel[minDistPointIndex2].add(objAPos);
+             }
+             if (shapeIndex2 == -1) {
+                 contact = contact1;
+             } else {
+                 contact = Vec.div(contact1.add(contact2),2);
+             }
+         }
+         if (Options.ContactPoints.debug) { System.out.println("Shape A Type: " + objA.type + "   Shape B Type: " + objB.type); }
         if  (shapeIndex2 != -1) {
             if (Options.ContactPoints.render.drawDoubleContactPoints && contact1 != null) { Stage.drawn.points.add(new Vec.coloredVec(contact1, new Color(20, 66, 6, 255))); }
             if (Options.ContactPoints.render.drawDoubleContactPoints && contact2 != null) { Stage.drawn.points.add(new Vec.coloredVec(contact2, new Color(20, 66, 6, 255))); }

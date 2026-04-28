@@ -1,170 +1,66 @@
-# TaterPhysics - Installation & Setup Guide
+# Installation & Setup
 
-## Quick Start
+## Build
 
-### Fastest Way - Using Run Script
+**Requirements:** Java 25+ (JDK from https://adoptium.net/)
 
-**Linux/macOS:**
+**Compile:**
 ```bash
-./run.sh
+./setup.sh        # Linux/macOS
+setup.bat         # Windows
 ```
 
-**Windows:**
-```batch
-run.bat
-```
+Output: `build/libs/TaterPhysics-1.0.0-all.jar`
 
-This will automatically build and run the demo.
+---
 
-### Quick Build & Run
+## Run
 
-**First time - Build the project:**
+**Using launcher script:**
 ```bash
-./setup.sh
+./run.sh          # Linux/macOS
+run.bat           # Windows
 ```
 
-**Then run:**
-```bash
-./run.sh
-```
-
-**Or manually:**
-```bash
-java -jar build/libs/TaterPhysics-1.0.0-all.jar
-```
-
-## Manual Installation
-
-### Prerequisites
-- **Java 21 or later** (JDK - must include javac compiler)
-- **No additional dependencies required**
-
-### Step 1: Install Java
-
-If you don't have Java installed, download from:
-- **Adoptium (Free, Recommended):** https://adoptium.net/
-- **Oracle Java:** https://www.oracle.com/java/technologies/downloads/
-- **OpenJDK:** https://openjdk.java.net/
-
-**Important:** Install the **JDK** (Java Development Kit), not just the JRE. You need the `javac` compiler.
-
-Verify installation:
-```bash
-java -version
-javac -version
-```
-
-You should see both commands work and show Java 11 or later.
-
-### Step 2: Build the Project
-
-Navigate to the project directory and run the setup script:
-
-**On Linux/macOS:**
-```bash
-./setup.sh
-```
-
-**On Windows:**
-Double-click `setup.bat` to run it, or from Command Prompt:
-```batch
-setup.bat
-```
-
-This will:
-1. Check for Java and javac
-2. Compile all Java source files
-3. Package them into a JAR file at: `build/libs/TaterPhysics-1.0.0-all.jar`
-
-### Step 3: Run the Demo
-
-**Using the launcher script (easiest):**
-```bash
-./run.sh        # Linux/macOS
-run.bat         # Windows
-```
-
-**Or direct execution:**
+**Direct:**
 ```bash
 java -jar build/libs/TaterPhysics-1.0.0-all.jar
 ```
 
 ---
 
-### Build to EXE using launch4j
-launch4j launch4j-config.xml
+## Windows EXE
 
+**Lightweight (~113 KB)** - needs Java 25:
+```bash
+launch4j launch4j-config.xml
+```
+
+**Self-Contained (~170 MB)** - no Java needed:
+1. Download Java 25 JRE from https://adoptium.net/ (Windows x64, .zip)
+2. Extract into `TaterPhysics/jre/`
+3. `launch4j launch4j-config-bundled.xml`
+
+---
 
 ## Troubleshooting
 
-### "Java command not found"
-- Java is not installed
-- Solution: Install Java from https://adoptium.net/
-
-### "javac command not found"
-- You have JRE installed but not JDK
-- Solution: Install JDK (not JRE) from https://adoptium.net/
-
-### "Compilation failed"
-- There are errors in the source code
-- Solution: Ensure all `.java` files are in the `src/` directory and intact
-
-### "JAR file not found"
-- The project hasn't been built yet
-- Solution: Run `./setup.sh` (or `setup.bat` on Windows)
-
-### "Permission denied" (Linux/macOS)
-- The shell scripts aren't executable
-- Solution: Run `chmod +x ./setup.sh ./run.sh` first
-
-### "Poor Performance / Low FPS"
-- Your system may have low available resources
-- Try running with more allocated memory: 
-  - `java -Xmx1024m -jar build/libs/TaterPhysics-1.0.0-all.jar`
-- Or close other applications
-
-### "Black/Empty Window"
-- Your graphics system might need time to initialize
-- Wait a moment for the window to fully render
-- Try resizing the window
-
-## System Requirements
-
-| Requirement | Minimum | Recommended |
-|---|---|---|
-| Java Version | 21 | 21 or later |
-| RAM | 256 MB | 512 MB+ |
-| Display | 1200x1000 | 1920x1080+ |
-| OS | Windows 7+ / macOS 10.12+ / Linux | Modern versions |
+- "Java not found" → Install JDK from https://adoptium.net/
+- "javac not found" → Install JDK (not JRE)
+- "Permission denied" → `chmod +x ./setup.sh ./run.sh`
+- "JAR not found" → Run `./setup.sh` first
+- Low FPS → `java -Xmx1024m -jar build/libs/TaterPhysics-1.0.0-all.jar`
+- launch4j: jre not found → Check `jre/bin/java.exe` exists
 
 ---
 
-## For Developers
+## IDE Setup
 
-If you want to modify the source code:
+- **IntelliJ:** Open folder, mark `src/` as Sources Root
+- **VS Code:** Install Extension Pack for Java
+- **Eclipse:** Import folder, set Java 25+ SDK
 
-1. Open the project in an IDE (IntelliJ IDEA, Eclipse, VS Code)
-2. Ensure Java SDK 21+ is configured
-3. The main entry point is `src/Main.java`
-4. The build scripts (`setup.sh` / `setup.bat`) use javac to compile
-
----
-
-## Running from IDE
-
-**IntelliJ IDEA:**
-1. Open the project folder
-2. Mark `src/` as Sources Root
-3. Run `Main.main()` directly
-
-**VS Code:**
-1. Install Extension Pack for Java
-2. Open the project folder
-3. Press Ctrl+Shift+D to debug, or use the Java menu
-
----
-
-For more information, see [README.md](README.md)
+Main: `src/Main.java`
 
 
 

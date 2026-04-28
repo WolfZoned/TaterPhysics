@@ -99,9 +99,9 @@ public class Object implements Cloneable {
             }
         }
         if (Options.Object.logCreation) {
-            IO.println("mass: " + this.mass + ", inertia: " + this.inertia);
-            IO.println("inverse mass: " + this.inverseMass + ", inverse inertia: " + this.inverseInertia);
-            IO.println("area: " + this.area);
+            System.out.println("mass: " + this.mass + ", inertia: " + this.inertia);
+            System.out.println("inverse mass: " + this.inverseMass + ", inverse inertia: " + this.inverseInertia);
+            System.out.println("area: " + this.area);
         }
     }
 
@@ -155,8 +155,8 @@ public class Object implements Cloneable {
             }
         }
         if (Options.Object.logCreation) {
-            IO.println("mass: " + this.mass + ", inertia: " + this.inertia);
-            IO.println("inverse mass: " + this.inverseMass + ", inverse inertia: " + this.inverseInertia);
+            System.out.println("mass: " + this.mass + ", inertia: " + this.inertia);
+            System.out.println("inverse mass: " + this.inverseMass + ", inverse inertia: " + this.inverseInertia);
         }
     }
 

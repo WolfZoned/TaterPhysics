@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This config bundles Java 25 with the EXE -->
+<launch4jConfig>
+  <dontWrapJar>false</dontWrapJar>
+  <headerType>gui</headerType>
+  <jar>build/libs/TaterPhysics-1.0.0-all.jar</jar>
+  <outfile>build/TaterPhysics.exe</outfile>
+  <errTitle>TaterPhysics</errTitle>
+  <cmdLine></cmdLine>
+  <chdir>.</chdir>
+  <priority>normal</priority>
+  <downloadUrl>https://adoptium.net/</downloadUrl>
+  <supportUrl></supportUrl>
+
+  <jre>
+    <!-- Path to the bundled JRE inside the EXE directory -->
+    <path>jre</path>
+    <minVersion>25.0.0</minVersion>
+    <maxVersion></maxVersion>
+    <jdkPreference>preferJre</jdkPreference>
+    <runtimeBits>64</runtimeBits>
+  </jre>
+
+  <messages>
+    <startupErr>An error occurred while starting the application.</startupErr>
+    <jreNotFoundErr>Java 25 was not found. Please download from https://adoptium.net/</jreNotFoundErr>
+  </messages>
+</launch4jConfig>
+

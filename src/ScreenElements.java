@@ -59,7 +59,7 @@ public class ScreenElements {
                 //create custom shape with polygonPoints as points
                 Vec[] pointsArray = drawnPoints.toArray(new Vec[0]);
                 if (!TaterMath.isConvex(pointsArray)) {
-                    IO.println("Error: Drawn polygon must be convex.");
+                    System.out.println("Error: Drawn polygon must be convex.");
                     drawnPoints.clear();
                     return;
                 }
@@ -74,7 +74,7 @@ public class ScreenElements {
                 Stage.objects.add(Object.createCustom(Options.colors.randomColor(), stageSize.div(2).x, stageSize.div(2).y, 0, pointsArray, new Vec(0, 0.3), false, false));
                 drawnPoints.clear();
             } else {
-                IO.println("Error: Invalid shape type");
+                System.out.println("Error: Invalid shape type");
             }
         }
     }
